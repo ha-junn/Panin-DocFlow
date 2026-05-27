@@ -3,12 +3,22 @@ import { redirect } from "next/navigation";
 import {
   ArrowUpRight,
   Banknote,
+  CheckCircle2,
   ClipboardList,
   Plus,
   ReceiptText,
+  Trash2,
 } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
+import { ConfirmSubmitButton } from "@/components/ConfirmSubmitButton";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { deleteDocumentAction } from "../documents/actions";
+
+type InvoicesPageProps = {
+  searchParams: Promise<{
+    message?: string;
+  }>;
+};
 
 type InvoiceDetail = {
   invoice_number: string | null;
@@ -58,7 +68,7 @@ function getInvoicePic(invoice: RawInvoiceDocument) {
   return getInvoiceDetail(invoice.invoice_details)?.internal_pic ?? invoice.recipient_name ?? "-";
 }
 
-export default async function InvoicesPage() {
+export default async function InvoicesPage({ searchParams }: InvoicesPageProps) {
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
@@ -68,24 +78,27 @@ export default async function InvoicesPage() {
     redirect("/login");
   }
 
-  const { data: invoices, error } = await supabase
-    .from("documents")
-    .select(
-      `
-      id,
-      agenda_number,
-      received_at,
-      sender_name,
-      recipient_name,
-      subject,
-      department:departments(name, code),
-      invoice_details(invoice_number, amount, internal_pic),
-      creator:profiles!documents_created_by_fkey(full_name)
-    `,
-    )
-    .eq("type", "INVOICE")
-    .order("received_at", { ascending: false })
-    .limit(100);
+  const [{ message }, { data: invoices, error }] = await Promise.all([
+    searchParams,
+    supabase
+      .from("documents")
+      .select(
+        `
+        id,
+        agenda_number,
+        received_at,
+        sender_name,
+        recipient_name,
+        subject,
+        department:departments(name, code),
+        invoice_details(invoice_number, amount, internal_pic),
+        creator:profiles!documents_created_by_fkey(full_name)
+      `,
+      )
+      .eq("type", "INVOICE")
+      .order("received_at", { ascending: false })
+      .limit(100),
+  ]);
 
   const rows = (invoices ?? []) as unknown as RawInvoiceDocument[];
   const vendorCount = new Set(rows.map((invoice) => invoice.sender_name)).size;
@@ -137,6 +150,13 @@ export default async function InvoicesPage() {
             </p>
           </div>
         </section>
+
+        {message ? (
+          <div className="flex items-start gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">
+            <CheckCircle2 className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+            {message}
+          </div>
+        ) : null}
 
         <section className="rounded-lg border border-slate-200 bg-white shadow-sm">
           <div className="flex flex-col gap-3 border-b border-slate-200 p-5 sm:flex-row sm:items-center sm:justify-between">
@@ -191,7 +211,7 @@ export default async function InvoicesPage() {
                       Tanggal
                     </th>
                     <th className="border-b border-slate-200 px-5 py-3 text-right">
-                      Detail
+                      Aksi
                     </th>
                   </tr>
                 </thead>
@@ -236,17 +256,41 @@ export default async function InvoicesPage() {
                           <td className="border-b border-slate-100 px-5 py-4 text-sm text-slate-600">
                             {formatDateTime(invoice.received_at)}
                           </td>
-                          <td className="border-b border-slate-100 px-5 py-4 text-right">
-                            <Link
-                              href={`/invoices/${invoice.id}`}
-                              className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-600 transition hover:border-[#D71920]/30 hover:bg-red-50 hover:text-[#B9151B]"
-                            >
-                              Detail
-                              <ArrowUpRight
-                                className="size-4"
-                                aria-hidden="true"
-                              />
-                            </Link>
+                          <td className="border-b border-slate-100 px-5 py-4">
+                            <div className="flex justify-end gap-2">
+                              <Link
+                                href={`/invoices/${invoice.id}`}
+                                className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-600 transition hover:border-[#D71920]/30 hover:bg-red-50 hover:text-[#B9151B]"
+                              >
+                                Detail
+                                <ArrowUpRight
+                                  className="size-4"
+                                  aria-hidden="true"
+                                />
+                              </Link>
+                              <form action={deleteDocumentAction}>
+                                <input
+                                  type="hidden"
+                                  name="id"
+                                  value={invoice.id}
+                                />
+                                <input
+                                  type="hidden"
+                                  name="type"
+                                  value="INVOICE"
+                                />
+                                <ConfirmSubmitButton
+                                  message={`Hapus invoice ${invoice.agenda_number}?`}
+                                  className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-red-200 bg-white px-3 text-sm font-semibold text-[#B9151B] transition hover:bg-red-50"
+                                >
+                                  <Trash2
+                                    className="size-4"
+                                    aria-hidden="true"
+                                  />
+                                  Hapus
+                                </ConfirmSubmitButton>
+                              </form>
+                            </div>
                           </td>
                         </tr>
                       );

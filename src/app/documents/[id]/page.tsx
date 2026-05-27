@@ -7,10 +7,13 @@ import {
   FileText,
   Paperclip,
   Pencil,
+  Trash2,
   UserRound,
 } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
+import { ConfirmSubmitButton } from "@/components/ConfirmSubmitButton";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { deleteDocumentAction } from "../actions";
 
 type DetailPageProps = {
   params: Promise<{
@@ -214,6 +217,18 @@ export default async function DocumentDetailPage({
                 <Pencil className="size-4" aria-hidden="true" />
                 Edit Dokumen
               </Link>
+
+              <form action={deleteDocumentAction}>
+                <input type="hidden" name="id" value={detail.id} />
+                <input type="hidden" name="type" value="LETTER" />
+                <ConfirmSubmitButton
+                  message={`Hapus dokumen ${detail.agenda_number}?`}
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-red-200 bg-white px-4 text-sm font-semibold text-[#B9151B] shadow-sm transition hover:bg-red-50"
+                >
+                  <Trash2 className="size-4" aria-hidden="true" />
+                  Hapus
+                </ConfirmSubmitButton>
+              </form>
 
               {attachmentUrl ? (
                 <a

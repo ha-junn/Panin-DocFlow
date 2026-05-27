@@ -7,9 +7,12 @@ import {
   Paperclip,
   Pencil,
   ReceiptText,
+  Trash2,
   UserRound,
 } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
+import { ConfirmSubmitButton } from "@/components/ConfirmSubmitButton";
+import { deleteDocumentAction } from "@/app/documents/actions";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 type InvoiceDetailPageProps = {
@@ -205,6 +208,18 @@ export default async function InvoiceDetailPage({
                 <Pencil className="size-4" aria-hidden="true" />
                 Edit Invoice
               </Link>
+
+              <form action={deleteDocumentAction}>
+                <input type="hidden" name="id" value={detail.id} />
+                <input type="hidden" name="type" value="INVOICE" />
+                <ConfirmSubmitButton
+                  message={`Hapus invoice ${detail.agenda_number}?`}
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-red-200 bg-white px-4 text-sm font-semibold text-[#B9151B] shadow-sm transition hover:bg-red-50"
+                >
+                  <Trash2 className="size-4" aria-hidden="true" />
+                  Hapus
+                </ConfirmSubmitButton>
+              </form>
 
               {attachmentUrl ? (
                 <a

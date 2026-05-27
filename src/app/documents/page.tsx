@@ -2,19 +2,26 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
   ArrowUpRight,
+  CheckCircle2,
   FilePlus2,
   FileText,
   Inbox,
+  Trash2,
 } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
+import { ConfirmSubmitButton } from "@/components/ConfirmSubmitButton";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { deleteDocumentAction } from "./actions";
 
-type DbDocumentType = "LETTER" | "INVOICE";
+type DocumentsPageProps = {
+  searchParams: Promise<{
+    message?: string;
+  }>;
+};
 
 type RawDocument = {
   id: string;
   agenda_number: string;
-  type: "LETTER";
   received_at: string;
   sender_name: string;
   recipient_name: string | null;
@@ -22,11 +29,6 @@ type RawDocument = {
   department: { name: string; code: string } | null;
   category: { name: string } | null;
   creator: { full_name: string } | null;
-};
-
-const typeStyles: Record<DbDocumentType, string> = {
-  LETTER: "bg-[#0A3A60] text-white",
-  INVOICE: "bg-[#D71920] text-white",
 };
 
 const dateTimeFormatter = new Intl.DateTimeFormat("id-ID", {
@@ -41,11 +43,9 @@ function formatDateTime(value: string) {
   return dateTimeFormatter.format(new Date(value));
 }
 
-function formatDocumentType(type: DbDocumentType) {
-  return type === "INVOICE" ? "Invoice" : "Dokumen";
-}
-
-export default async function DocumentsPage() {
+export default async function DocumentsPage({
+  searchParams,
+}: DocumentsPageProps) {
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
@@ -55,25 +55,27 @@ export default async function DocumentsPage() {
     redirect("/login");
   }
 
-  const { data: documents, error } = await supabase
-    .from("documents")
-    .select(
-      `
-      id,
-      agenda_number,
-      type,
-      received_at,
-      sender_name,
-      recipient_name,
-      subject,
-      department:departments(name, code),
-      category:document_categories(name),
-      creator:profiles!documents_created_by_fkey(full_name)
-    `,
-    )
-    .eq("type", "LETTER")
-    .order("received_at", { ascending: false })
-    .limit(100);
+  const [{ message }, { data: documents, error }] = await Promise.all([
+    searchParams,
+    supabase
+      .from("documents")
+      .select(
+        `
+        id,
+        agenda_number,
+        received_at,
+        sender_name,
+        recipient_name,
+        subject,
+        department:departments(name, code),
+        category:document_categories(name),
+        creator:profiles!documents_created_by_fkey(full_name)
+      `,
+      )
+      .eq("type", "LETTER")
+      .order("received_at", { ascending: false })
+      .limit(100),
+  ]);
 
   const rows = (documents ?? []) as unknown as RawDocument[];
 
@@ -125,6 +127,13 @@ export default async function DocumentsPage() {
           </div>
         </section>
 
+        {message ? (
+          <div className="flex items-start gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">
+            <CheckCircle2 className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+            {message}
+          </div>
+        ) : null}
+
         <section className="rounded-lg border border-slate-200 bg-white shadow-sm">
           <div className="flex flex-col gap-3 border-b border-slate-200 p-5 sm:flex-row sm:items-center sm:justify-between">
             <div>
@@ -161,9 +170,6 @@ export default async function DocumentsPage() {
                   <tr className="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500">
                     <th className="border-b border-slate-200 px-5 py-3">
                       Nomor Agenda
-                    </th>
-                    <th className="border-b border-slate-200 px-5 py-3">
-                      Jenis
                     </th>
                     <th className="border-b border-slate-200 px-5 py-3">
                       Tanggal
@@ -203,13 +209,6 @@ export default async function DocumentsPage() {
                               Dibuat oleh {document.creator?.full_name ?? "-"}
                             </p>
                           </td>
-                          <td className="border-b border-slate-100 px-5 py-4">
-                            <span
-                              className={`inline-flex rounded-md px-2.5 py-1 text-xs font-semibold ${typeStyles[document.type]}`}
-                            >
-                              {formatDocumentType(document.type)}
-                            </span>
-                          </td>
                           <td className="border-b border-slate-100 px-5 py-4 text-sm text-slate-600">
                             {formatDateTime(document.received_at)}
                           </td>
@@ -230,23 +229,47 @@ export default async function DocumentsPage() {
                           <td className="border-b border-slate-100 px-5 py-4 text-sm text-slate-600">
                             {document.recipient_name ?? "-"}
                           </td>
-                          <td className="border-b border-slate-100 px-5 py-4 text-right">
-                            <Link
-                              href={`/documents/${document.id}`}
-                              className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-600 transition hover:border-[#0A3A60]/30 hover:bg-slate-50 hover:text-[#0A3A60]"
-                            >
-                              Detail
-                              <ArrowUpRight
-                                className="size-4"
-                                aria-hidden="true"
-                              />
-                            </Link>
+                          <td className="border-b border-slate-100 px-5 py-4">
+                            <div className="flex justify-end gap-2">
+                              <Link
+                                href={`/documents/${document.id}`}
+                                className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-600 transition hover:border-[#0A3A60]/30 hover:bg-slate-50 hover:text-[#0A3A60]"
+                              >
+                                Detail
+                                <ArrowUpRight
+                                  className="size-4"
+                                  aria-hidden="true"
+                                />
+                              </Link>
+                              <form action={deleteDocumentAction}>
+                                <input
+                                  type="hidden"
+                                  name="id"
+                                  value={document.id}
+                                />
+                                <input
+                                  type="hidden"
+                                  name="type"
+                                  value="LETTER"
+                                />
+                                <ConfirmSubmitButton
+                                  message={`Hapus dokumen ${document.agenda_number}?`}
+                                  className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-red-200 bg-white px-3 text-sm font-semibold text-[#B9151B] transition hover:bg-red-50"
+                                >
+                                  <Trash2
+                                    className="size-4"
+                                    aria-hidden="true"
+                                  />
+                                  Hapus
+                                </ConfirmSubmitButton>
+                              </form>
+                            </div>
                           </td>
                         </tr>
                       ))
                   ) : (
                     <tr>
-                      <td colSpan={9} className="px-5 py-14 text-center">
+                      <td colSpan={8} className="px-5 py-14 text-center">
                         <div className="mx-auto flex size-12 items-center justify-center rounded-lg bg-slate-100 text-slate-500">
                           <FileText className="size-6" aria-hidden="true" />
                         </div>

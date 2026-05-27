@@ -161,17 +161,6 @@ export default async function NewInvoicePage({
                 />
               </label>
 
-              <label className="block md:col-span-2">
-                <span className="text-sm font-medium text-slate-700">
-                  Catatan
-                </span>
-                <textarea
-                  name="notes"
-                  rows={4}
-                  placeholder="Catatan umum untuk batch invoice ini"
-                  className="mt-1.5 w-full resize-none rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#0A3A60] focus:bg-white focus:ring-4 focus:ring-[#0A3A60]/10"
-                />
-              </label>
             </div>
 
             <div className="border-t border-slate-200 pt-5">
@@ -185,6 +174,18 @@ export default async function NewInvoicePage({
                 </p>
               </div>
               <InvoiceRows />
+
+              <label className="mt-5 block">
+                <span className="text-sm font-medium text-slate-700">
+                  Catatan
+                </span>
+                <textarea
+                  name="notes"
+                  rows={4}
+                  placeholder="Catatan umum untuk batch invoice ini"
+                  className="mt-1.5 w-full resize-none rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#0A3A60] focus:bg-white focus:ring-4 focus:ring-[#0A3A60]/10"
+                />
+              </label>
             </div>
           </section>
 
