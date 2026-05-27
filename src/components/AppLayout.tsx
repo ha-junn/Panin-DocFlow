@@ -1,0 +1,314 @@
+"use client";
+
+import Link from "next/link";
+import Image from "next/image";
+import { usePathname } from "next/navigation";
+import { useMemo, useState } from "react";
+import type { ReactNode } from "react";
+import type { LucideIcon } from "lucide-react";
+import {
+  Bell,
+  ChevronDown,
+  ClipboardList,
+  FileArchive,
+  FileText,
+  LayoutDashboard,
+  Menu,
+  Search,
+  Settings,
+  ShieldCheck,
+  LogOut,
+  X,
+} from "lucide-react";
+import { signOutAction } from "@/app/login/actions";
+
+type NavigationItem = {
+  label: string;
+  href: string;
+  icon: LucideIcon;
+  badge: string | null;
+};
+
+const navigationItems: NavigationItem[] = [
+  {
+    label: "Dashboard",
+    href: "/",
+    icon: LayoutDashboard,
+    badge: null,
+  },
+  {
+    label: "Pencarian",
+    href: "/search",
+    icon: Search,
+    badge: null,
+  },
+  {
+    label: "Dokumen",
+    href: "/documents",
+    icon: FileText,
+    badge: "18",
+  },
+  {
+    label: "Invoice Masuk",
+    href: "/invoices",
+    icon: ClipboardList,
+    badge: "7",
+  },
+  {
+    label: "Laporan",
+    href: "/reports",
+    icon: FileArchive,
+    badge: null,
+  },
+  {
+    label: "Pengaturan",
+    href: "/settings/departments",
+    icon: Settings,
+    badge: null,
+  },
+];
+
+const branchProfile = {
+  code: "HRM-GA",
+  name: "Pusat",
+  operator: "Ha Junn",
+  role: "Admin Operasional",
+};
+
+const runningNotice =
+  "Panin DocFlow aktif | Dikembangkan oleh Aprijal | Aktif sejak 02 Juni 2026 | Catat dokumen sesuai tanggal diterima | Pastikan lampiran terbaca jelas | Backup data setiap akhir bulan";
+
+function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
+  const pathname = usePathname();
+
+  return (
+    <div className="flex h-full flex-col bg-[#0A3A60] text-white">
+      <div className="border-b border-white/10 px-5 py-5">
+        <div className="flex items-center gap-3">
+          <div className="relative size-12 overflow-hidden rounded-lg">
+            <Image
+              src="/panin-docflow-symbol-v2.png"
+              alt="Logo Panin DocFlow"
+              fill
+              sizes="48px"
+              className="object-contain object-center"
+              priority
+            />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-lg font-semibold leading-5 tracking-normal text-white">
+              <span className="text-[#F04444]">Panin</span>
+              <span className="text-[#38BDF8]">Bank</span>
+            </p>
+            <p className="mt-0.5 truncate text-xs font-medium text-sky-100">
+              DocFlow
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <nav className="flex-1 space-y-1 px-3 py-5" aria-label="Navigasi utama">
+        {navigationItems.map((item) => {
+          const Icon = item.icon;
+          const isActive =
+            item.href === "/"
+              ? pathname === "/"
+              : pathname === item.href || pathname.startsWith(`${item.href}/`);
+
+          return (
+            <Link
+              key={item.label}
+              href={item.href}
+              onClick={onNavigate}
+              className={[
+                "group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium transition",
+                isActive
+                  ? "bg-white text-[#0A3A60] shadow-sm"
+                  : "text-sky-50 hover:bg-white/10 hover:text-white",
+              ].join(" ")}
+            >
+              <Icon
+                className={[
+                  "size-4 shrink-0",
+                  isActive ? "text-[#0A3A60]" : "text-sky-100",
+                ].join(" ")}
+                aria-hidden="true"
+              />
+              <span className="min-w-0 flex-1 truncate">{item.label}</span>
+              {item.badge ? (
+                <span
+                  className={[
+                    "rounded-full px-2 py-0.5 text-xs font-semibold",
+                    isActive
+                      ? "bg-[#0A3A60] text-white"
+                      : "bg-white/15 text-sky-50",
+                  ].join(" ")}
+                >
+                  {item.badge}
+                </span>
+              ) : null}
+            </Link>
+          );
+        })}
+      </nav>
+
+      <div className="border-t border-white/10 p-4">
+        <div className="rounded-lg bg-white/10 p-3">
+          <div className="flex items-center gap-2 text-xs font-medium text-sky-50">
+            <ShieldCheck className="size-4 text-emerald-300" aria-hidden="true" />
+            Audit trail aktif
+          </div>
+          <p className="mt-2 text-xs leading-5 text-sky-100">
+            Setiap perubahan dokumen tercatat dengan waktu dan pengguna
+            terverifikasi.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TopNavbar({ onMenuClick }: { onMenuClick: () => void }) {
+  const currentDate = useMemo(
+    () =>
+      new Intl.DateTimeFormat("id-ID", {
+        weekday: "short",
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      }).format(new Date()),
+    [],
+  );
+
+  return (
+    <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
+      <div className="flex min-h-16 items-center gap-3 px-4 sm:px-6 lg:px-8">
+        <button
+          type="button"
+          onClick={onMenuClick}
+          className="inline-flex size-10 items-center justify-center rounded-lg border border-slate-200 text-slate-600 transition hover:border-[#0A3A60]/30 hover:bg-slate-50 hover:text-[#0A3A60] lg:hidden"
+          aria-label="Buka navigasi"
+          title="Buka navigasi"
+        >
+          <Menu className="size-5" aria-hidden="true" />
+        </button>
+
+        <div className="hidden min-w-0 lg:block">
+          <p className="text-xs font-medium uppercase tracking-[0.16em] text-slate-500">
+            {currentDate}
+          </p>
+          <p className="text-sm font-semibold text-slate-950">
+            Monitoring Dokumen HRM-GA
+          </p>
+        </div>
+
+        <div
+          className="topbar-marquee hidden h-10 min-w-0 flex-1 items-center overflow-hidden rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm text-slate-600 lg:flex"
+          aria-label={runningNotice}
+        >
+          <div className="topbar-marquee-track flex min-w-max items-center gap-8">
+            <span>{runningNotice}</span>
+            <span aria-hidden="true">{runningNotice}</span>
+          </div>
+        </div>
+
+        <div className="hidden items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm md:flex">
+          <FileArchive className="size-4 text-[#0A3A60]" aria-hidden="true" />
+          <span className="text-slate-500">{branchProfile.name}</span>
+          <span className="font-semibold text-slate-950">
+            {branchProfile.code}
+          </span>
+        </div>
+
+        <button
+          type="button"
+          className="relative inline-flex size-10 items-center justify-center rounded-lg border border-slate-200 text-slate-600 transition hover:border-[#0A3A60]/30 hover:bg-slate-50 hover:text-[#0A3A60]"
+          aria-label="Lihat notifikasi"
+          title="Notifikasi"
+        >
+          <Bell className="size-5" aria-hidden="true" />
+          <span className="absolute right-2 top-2 size-2 rounded-full bg-[#EF4444] ring-2 ring-white" />
+        </button>
+
+        <button
+          type="button"
+          className="hidden items-center gap-3 rounded-lg border border-slate-200 bg-white py-1.5 pl-1.5 pr-3 text-left shadow-sm transition hover:border-[#0A3A60]/30 hover:bg-slate-50 sm:flex"
+          aria-label="Buka menu pengguna"
+          title="Profil pengguna"
+        >
+          <Image
+            src="/ha-junn-profile-close.png"
+            alt="Foto profil Ha Junn"
+            width={32}
+            height={32}
+            className="size-8 rounded-md object-cover object-[50%_24%]"
+          />
+          <span className="min-w-0">
+            <span className="block truncate text-sm font-semibold leading-4 text-slate-950">
+              {branchProfile.operator}
+            </span>
+            <span className="block truncate text-xs text-slate-500">
+              {branchProfile.role}
+            </span>
+          </span>
+          <ChevronDown className="size-4 text-slate-400" aria-hidden="true" />
+        </button>
+
+        <form action={signOutAction}>
+          <button
+            type="submit"
+            className="inline-flex size-10 items-center justify-center rounded-lg border border-slate-200 text-slate-600 transition hover:border-red-200 hover:bg-red-50 hover:text-[#D71920]"
+            aria-label="Keluar"
+            title="Keluar"
+          >
+            <LogOut className="size-5" aria-hidden="true" />
+          </button>
+        </form>
+      </div>
+    </header>
+  );
+}
+
+export function AppLayout({ children }: { children: ReactNode }) {
+  const [isMobileNavOpen, setMobileNavOpen] = useState(false);
+
+  return (
+    <div className="min-h-screen bg-[#F8FAFC] text-slate-950">
+      <aside className="fixed inset-y-0 left-0 z-40 hidden w-72 lg:block">
+        <SidebarContent />
+      </aside>
+
+      {isMobileNavOpen ? (
+        <div className="fixed inset-0 z-50 lg:hidden">
+          <button
+            type="button"
+            className="absolute inset-0 bg-slate-950/45"
+            aria-label="Tutup overlay navigasi"
+            onClick={() => setMobileNavOpen(false)}
+          />
+          <div className="absolute inset-y-0 left-0 w-80 max-w-[86vw] shadow-2xl">
+            <div className="absolute right-3 top-3 z-10">
+              <button
+                type="button"
+                onClick={() => setMobileNavOpen(false)}
+                className="inline-flex size-9 items-center justify-center rounded-lg bg-white/10 text-white transition hover:bg-white/20"
+                aria-label="Tutup navigasi"
+                title="Tutup navigasi"
+              >
+                <X className="size-5" aria-hidden="true" />
+              </button>
+            </div>
+            <SidebarContent onNavigate={() => setMobileNavOpen(false)} />
+          </div>
+        </div>
+      ) : null}
+
+      <div className="lg:pl-72">
+        <TopNavbar onMenuClick={() => setMobileNavOpen(true)} />
+        <main className="px-4 py-6 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-7xl">{children}</div>
+        </main>
+      </div>
+    </div>
+  );
+}

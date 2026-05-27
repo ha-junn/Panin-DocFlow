@@ -1,0 +1,31 @@
+# dependencies
+node_modules/
+
+# next.js
+.next/
+out/
+
+# production
+dist/
+build/
+
+# environment
+.env
+.env*.local
+.env*.save
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# local files
+.DS_Store
+
+# local agent tooling
+.agents/
+skills-lock.json
+
+# unused local asset kept out of deploy
+public/panin-bank-wordmark.png

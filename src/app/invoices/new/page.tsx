@@ -1,0 +1,232 @@
+import { redirect } from "next/navigation";
+import Link from "next/link";
+import {
+  ArrowLeft,
+  CalendarClock,
+  ClipboardList,
+  Paperclip,
+  Save,
+  UserRound,
+} from "lucide-react";
+import { AppLayout } from "@/components/AppLayout";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createInvoiceBatchAction } from "./actions";
+import { InvoiceRows } from "./InvoiceRows";
+
+type NewInvoicePageProps = {
+  searchParams: Promise<{
+    message?: string;
+  }>;
+};
+
+type Department = {
+  id: string;
+  name: string;
+  code: string;
+};
+
+function toDatetimeLocalValue(date: Date) {
+  const offsetMs = date.getTimezoneOffset() * 60_000;
+  return new Date(date.getTime() - offsetMs).toISOString().slice(0, 16);
+}
+
+export default async function NewInvoicePage({
+  searchParams,
+}: NewInvoicePageProps) {
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
+  const [{ data: departments }, params] = await Promise.all([
+    supabase
+      .from("departments")
+      .select("id, name, code")
+      .in("code", ["GA", "HRM"])
+      .order("name", { ascending: true }),
+    searchParams,
+  ]);
+
+  const departmentOptions = (departments ?? []) as Department[];
+
+  return (
+    <AppLayout>
+      <div className="space-y-6">
+        <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <Link
+                href="/"
+                className="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 transition hover:text-[#0A3A60]"
+              >
+                <ArrowLeft className="size-4" aria-hidden="true" />
+                Kembali ke dashboard
+              </Link>
+              <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-[#D71920]/15 bg-[#D71920]/5 px-3 py-1 text-xs font-semibold text-[#B9151B]">
+                <ClipboardList className="size-3.5" aria-hidden="true" />
+                Invoice Masuk
+              </div>
+              <h1 className="mt-4 text-2xl font-semibold tracking-tight text-slate-950 sm:text-3xl">
+                Tambah Invoice Masuk
+              </h1>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
+                Isi vendor satu kali, lalu tambahkan nomor invoice atau nominal
+                jika tersedia. Nomor invoice dan nominal boleh dikosongkan.
+              </p>
+            </div>
+
+            <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
+              <p className="text-xs font-medium uppercase tracking-[0.14em] text-slate-500">
+                Format agenda
+              </p>
+              <p className="mt-1 text-sm font-semibold text-slate-950">
+                INV/YYYY/MM/0001
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {params.message ? (
+          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+            {params.message}
+          </div>
+        ) : null}
+
+        <form
+          action={createInvoiceBatchAction}
+          className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]"
+        >
+          <section className="space-y-6 rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="grid gap-5 md:grid-cols-2">
+              <label className="block">
+                <span className="flex items-center gap-2 text-sm font-medium text-slate-700">
+                  <CalendarClock className="size-4 text-slate-400" />
+                  Tanggal dan waktu diterima
+                </span>
+                <input
+                  name="received_at"
+                  type="datetime-local"
+                  required
+                  defaultValue={toDatetimeLocalValue(new Date())}
+                  className="mt-1.5 h-11 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm text-slate-900 outline-none transition focus:border-[#0A3A60] focus:bg-white focus:ring-4 focus:ring-[#0A3A60]/10"
+                />
+              </label>
+
+              <label className="block">
+                <span className="text-sm font-medium text-slate-700">
+                  Vendor/pengirim
+                </span>
+                <input
+                  name="vendor_name"
+                  type="text"
+                  required
+                  placeholder="Contoh: PT Nata Surya Cemerlang"
+                  className="mt-1.5 h-11 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#0A3A60] focus:bg-white focus:ring-4 focus:ring-[#0A3A60]/10"
+                />
+              </label>
+
+              <label className="block">
+                <span className="text-sm font-medium text-slate-700">
+                  Departemen tujuan
+                </span>
+                <select
+                  name="department_id"
+                  required
+                  className="mt-1.5 h-11 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm text-slate-900 outline-none transition focus:border-[#0A3A60] focus:bg-white focus:ring-4 focus:ring-[#0A3A60]/10"
+                >
+                  <option value="">Pilih departemen</option>
+                  {departmentOptions.map((department) => (
+                    <option key={department.id} value={department.id}>
+                      {department.name} ({department.code})
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="block">
+                <span className="flex items-center gap-2 text-sm font-medium text-slate-700">
+                  <UserRound className="size-4 text-slate-400" />
+                  PIC/penerima internal
+                </span>
+                <input
+                  name="internal_pic"
+                  type="text"
+                  required
+                  placeholder="Nama PIC internal"
+                  className="mt-1.5 h-11 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#0A3A60] focus:bg-white focus:ring-4 focus:ring-[#0A3A60]/10"
+                />
+              </label>
+
+              <label className="block md:col-span-2">
+                <span className="text-sm font-medium text-slate-700">
+                  Catatan
+                </span>
+                <textarea
+                  name="notes"
+                  rows={4}
+                  placeholder="Catatan umum untuk batch invoice ini"
+                  className="mt-1.5 w-full resize-none rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#0A3A60] focus:bg-white focus:ring-4 focus:ring-[#0A3A60]/10"
+                />
+              </label>
+            </div>
+
+            <div className="border-t border-slate-200 pt-5">
+              <div className="mb-4">
+                <h2 className="text-sm font-semibold text-slate-950">
+                  Daftar Invoice
+                </h2>
+                <p className="mt-1 text-sm text-slate-500">
+                  Tambahkan rincian invoice jika tersedia. Baris boleh
+                  dikosongkan dan tetap bisa disimpan.
+                </p>
+              </div>
+              <InvoiceRows />
+            </div>
+          </section>
+
+          <aside className="space-y-4">
+            <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+              <p className="text-sm font-semibold text-slate-950">
+                Cara penyimpanan
+              </p>
+              <p className="mt-3 text-sm leading-6 text-slate-500">
+                Satu baris invoice akan menjadi satu dokumen dengan nomor agenda
+                sendiri, sehingga pencarian dan detail dokumen tetap rapi.
+              </p>
+            </div>
+
+            <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+              <label className="block">
+                <span className="flex items-center gap-2 text-sm font-semibold text-slate-950">
+                  <Paperclip className="size-4 text-slate-400" />
+                  Lampiran
+                </span>
+                <input
+                  name="attachment"
+                  type="file"
+                  accept="application/pdf,image/jpeg,image/png"
+                  className="mt-3 block w-full text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-[#D71920] file:px-3 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-[#b9151b]"
+                />
+              </label>
+              <p className="mt-3 text-xs leading-5 text-slate-500">
+                Format yang diterima: PDF, JPG, PNG. Maksimal 10 MB.
+              </p>
+            </div>
+
+            <button
+              type="submit"
+              className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-[#D71920] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#b9151b] focus:outline-none focus:ring-4 focus:ring-[#D71920]/20"
+            >
+              <Save className="size-4" aria-hidden="true" />
+              Simpan Invoice
+            </button>
+          </aside>
+        </form>
+      </div>
+    </AppLayout>
+  );
+}
