@@ -4,14 +4,12 @@ import {
   ArrowUpRight,
   FileSearch,
   FileText,
-  Filter,
   ReceiptText,
-  RotateCcw,
-  Search,
   UserRound,
 } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { SearchFilters } from "./SearchFilters";
 
 type SearchPageProps = {
   searchParams: Promise<{
@@ -219,62 +217,13 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
         </section>
 
         <section className="rounded-lg border border-slate-200 bg-white shadow-sm">
-          <form className="border-b border-slate-200 p-5">
-            <div className="grid gap-3 lg:grid-cols-[minmax(280px,1fr)_160px_220px_auto_auto]">
-              <label className="relative block">
-                <Search
-                  className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400"
-                  aria-hidden="true"
-                />
-                <input
-                  name="q"
-                  type="search"
-                  defaultValue={keyword}
-                  placeholder="Cari agenda, vendor, kategori, PIC"
-                  className="h-10 w-full rounded-lg border border-slate-200 bg-slate-50 pl-9 pr-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#0A3A60] focus:bg-white focus:ring-4 focus:ring-[#0A3A60]/10"
-                />
-              </label>
-
-              <select
-                name="type"
-                defaultValue={type}
-                className="h-10 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm text-slate-900 outline-none transition focus:border-[#0A3A60] focus:bg-white focus:ring-4 focus:ring-[#0A3A60]/10"
-              >
-                <option value="">Semua jenis</option>
-                <option value="LETTER">Surat</option>
-                <option value="INVOICE">Invoice</option>
-              </select>
-
-              <select
-                name="category"
-                defaultValue={category}
-                className="h-10 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm text-slate-900 outline-none transition focus:border-[#0A3A60] focus:bg-white focus:ring-4 focus:ring-[#0A3A60]/10"
-              >
-                <option value="">Semua kategori</option>
-                {categoryOptions.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.name}
-                  </option>
-                ))}
-              </select>
-
-              <button
-                type="submit"
-                className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[#0A3A60] px-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#082f4f]"
-              >
-                <Filter className="size-4" aria-hidden="true" />
-                Cari
-              </button>
-
-              <Link
-                href="/search"
-                className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-600 transition hover:border-[#0A3A60]/30 hover:bg-slate-50 hover:text-[#0A3A60]"
-              >
-                <RotateCcw className="size-4" aria-hidden="true" />
-                Reset
-              </Link>
-            </div>
-          </form>
+          <SearchFilters
+            key={`${keyword}-${type}-${category}`}
+            keyword={keyword}
+            type={type}
+            category={category}
+            categories={categoryOptions}
+          />
 
           {error ? (
             <div className="p-8 text-center">
