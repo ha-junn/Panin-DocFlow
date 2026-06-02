@@ -20,7 +20,11 @@ function parseOptionalAmount(value: string) {
     return null;
   }
 
-  const normalized = value.replace(/\./g, "").replace(",", ".");
+  const normalized = value
+    .replace(/rp/gi, "")
+    .replace(/\s/g, "")
+    .replace(/\./g, "")
+    .replace(",", ".");
   const amount = Number(normalized);
 
   if (!Number.isFinite(amount) || amount <= 0) {
@@ -58,6 +62,9 @@ export async function updateDocumentAction(formData: FormData) {
   const notes = optionalFormString(formData, "notes");
   const letterNumber = optionalFormString(formData, "letter_number");
   const letterDate = optionalFormString(formData, "letter_date");
+  const employeeName = optionalFormString(formData, "employee_name");
+  const documentAmountInput = formString(formData, "document_amount");
+  const documentAmount = parseOptionalAmount(documentAmountInput);
   const categoryId = formString(formData, "category_id");
   const invoiceNumber = optionalFormString(formData, "invoice_number");
   const amountInput = formString(formData, "amount");
@@ -86,6 +93,14 @@ export async function updateDocumentAction(formData: FormData) {
     redirect(
       `/documents/${documentId}/edit?message=${encodeURIComponent(
         "Nominal harus lebih dari 0 atau dikosongkan.",
+      )}`,
+    );
+  }
+
+  if (documentAmount === undefined) {
+    redirect(
+      `/documents/${documentId}/edit?message=${encodeURIComponent(
+        "Total dokumen harus berupa angka Rupiah lebih dari 0 atau dikosongkan.",
       )}`,
     );
   }
@@ -129,6 +144,8 @@ export async function updateDocumentAction(formData: FormData) {
           category_id: categoryId,
           letter_number: letterNumber,
           letter_date: letterDate,
+          employee_name: employeeName,
+          amount: documentAmount,
         }
       : {}),
   };

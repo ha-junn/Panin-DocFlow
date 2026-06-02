@@ -36,6 +36,8 @@ type DocumentDetail = {
   sender_name: string;
   recipient_name: string | null;
   subject: string;
+  employee_name: string | null;
+  amount: number | null;
   notes: string | null;
   attachment_url: string | null;
   created_at: string;
@@ -73,12 +75,22 @@ const dateFormatter = new Intl.DateTimeFormat("id-ID", {
   year: "numeric",
 });
 
+const currencyFormatter = new Intl.NumberFormat("id-ID", {
+  style: "currency",
+  currency: "IDR",
+  maximumFractionDigits: 0,
+});
+
 function formatDateTime(value: string) {
   return dateTimeFormatter.format(new Date(value));
 }
 
 function formatDate(value: string | null) {
   return value ? dateFormatter.format(new Date(value)) : null;
+}
+
+function formatCurrency(value: number | null) {
+  return value ? currencyFormatter.format(value) : null;
 }
 
 function formatDocumentType(type: DbDocumentType) {
@@ -132,6 +144,8 @@ export default async function DocumentDetailPage({
           sender_name,
           recipient_name,
           subject,
+          employee_name,
+          amount,
           notes,
           attachment_url,
           created_at,
@@ -272,6 +286,8 @@ export default async function DocumentDetailPage({
                   value={formatDate(detail.letter_date)}
                 />
                 <DetailItem label="Kategori" value={detail.category?.name} />
+                <DetailItem label="Nama karyawan" value={detail.employee_name} />
+                <DetailItem label="Total" value={formatCurrency(detail.amount)} />
                 <DetailItem label="Pengirim" value={detail.sender_name} />
                 <DetailItem label="Ditujukan kepada" value={detail.recipient_name} />
                 <DetailItem

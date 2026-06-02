@@ -15,6 +15,25 @@ function requiredString(formData: FormData, key: string) {
   return String(formData.get(key) ?? "").trim();
 }
 
+function parseOptionalRupiah(value: string) {
+  if (!value) {
+    return null;
+  }
+
+  const normalized = value
+    .replace(/rp/gi, "")
+    .replace(/\s/g, "")
+    .replace(/\./g, "")
+    .replace(",", ".");
+  const amount = Number(normalized);
+
+  if (!Number.isFinite(amount) || amount <= 0) {
+    return undefined;
+  }
+
+  return amount;
+}
+
 function getFileExtension(file: File) {
   const fallbackExtension = file.type === "application/pdf" ? "pdf" : "bin";
   const extension = file.name.split(".").pop()?.toLowerCase();
@@ -38,6 +57,9 @@ export async function createLetterAction(formData: FormData) {
   const recipientName = requiredString(formData, "recipient_name");
   const departmentId = requiredString(formData, "department_id");
   const subject = requiredString(formData, "subject");
+  const employeeName = requiredString(formData, "employee_name");
+  const amountInput = requiredString(formData, "document_amount");
+  const amount = parseOptionalRupiah(amountInput);
   const categoryId = requiredString(formData, "category_id");
   const notes = requiredString(formData, "notes");
   const attachment = formData.get("attachment");
@@ -52,6 +74,12 @@ export async function createLetterAction(formData: FormData) {
   ) {
     redirect(
       "/documents/new?type=letter&message=Lengkapi semua field wajib sebelum menyimpan.",
+    );
+  }
+
+  if (amount === undefined) {
+    redirect(
+      "/documents/new?type=letter&message=Total harus berupa angka Rupiah lebih dari 0 atau dikosongkan.",
     );
   }
 
@@ -107,6 +135,8 @@ export async function createLetterAction(formData: FormData) {
     recipient_name: recipientName,
     department_id: departmentId,
     subject,
+    employee_name: employeeName || null,
+    amount,
     category_id: categoryId,
     notes: notes || null,
     attachment_url: attachmentUrl,

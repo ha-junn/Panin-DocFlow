@@ -41,6 +41,8 @@ type SearchDocument = {
   sender_name: string;
   recipient_name: string | null;
   subject: string;
+  employee_name: string | null;
+  amount: number | null;
   department: { name: string; code: string } | null;
   category: { name: string } | null;
   invoice_details: InvoiceDetail | InvoiceDetail[] | null;
@@ -106,6 +108,7 @@ function matchesKeyword(document: SearchDocument, keyword: string) {
     invoiceDetail?.invoice_number,
     document.sender_name,
     document.recipient_name,
+    document.employee_name,
     invoiceDetail?.internal_pic,
     document.subject,
     document.department?.name,
@@ -146,6 +149,8 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
       sender_name,
       recipient_name,
       subject,
+      employee_name,
+      amount,
       department:departments(name, code),
       category:document_categories(name),
       invoice_details(invoice_number, amount, internal_pic),

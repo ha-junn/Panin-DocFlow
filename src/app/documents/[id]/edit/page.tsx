@@ -50,6 +50,8 @@ type EditableDocument = {
   sender_name: string;
   recipient_name: string | null;
   subject: string;
+  employee_name: string | null;
+  amount: number | null;
   notes: string | null;
   letter_number: string | null;
   letter_date: string | null;
@@ -66,6 +68,10 @@ function toDatetimeLocalValue(value: string) {
 
 function toDateInputValue(value: string | null) {
   return value ? value.slice(0, 10) : "";
+}
+
+function formatAmountInput(value: number | null) {
+  return value ? String(value) : "";
 }
 
 function getInvoiceDetail(details: EditableDocument["invoice_details"]) {
@@ -108,6 +114,8 @@ export default async function EditDocumentPage({
           sender_name,
           recipient_name,
           subject,
+          employee_name,
+          amount,
           notes,
           letter_number,
           letter_date,
@@ -347,6 +355,37 @@ export default async function EditDocumentPage({
                   className="mt-1.5 h-11 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm text-slate-900 outline-none transition focus:border-[#0A3A60] focus:bg-white focus:ring-4 focus:ring-[#0A3A60]/10"
                 />
               </label>
+
+              {!isInvoice ? (
+                <div className="grid gap-5 md:col-span-2 md:grid-cols-2">
+                  <label className="block">
+                    <span className="text-sm font-medium text-slate-700">
+                      Nama karyawan
+                    </span>
+                    <input
+                      name="employee_name"
+                      type="text"
+                      defaultValue={detail.employee_name ?? ""}
+                      placeholder="Opsional"
+                      className="mt-1.5 h-11 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#0A3A60] focus:bg-white focus:ring-4 focus:ring-[#0A3A60]/10"
+                    />
+                  </label>
+
+                  <label className="block">
+                    <span className="text-sm font-medium text-slate-700">
+                      Total
+                    </span>
+                    <input
+                      name="document_amount"
+                      type="text"
+                      inputMode="numeric"
+                      defaultValue={formatAmountInput(detail.amount)}
+                      placeholder="Opsional, contoh: Rp 150.000"
+                      className="mt-1.5 h-11 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#0A3A60] focus:bg-white focus:ring-4 focus:ring-[#0A3A60]/10"
+                    />
+                  </label>
+                </div>
+              ) : null}
 
               <label className="block md:col-span-2">
                 <span className="text-sm font-medium text-slate-700">

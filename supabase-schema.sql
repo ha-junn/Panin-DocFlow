@@ -126,6 +126,8 @@ create table if not exists public.documents (
   recipient_name text,
   department_id uuid not null references public.departments(id) on delete restrict,
   subject text not null,
+  employee_name text,
+  amount numeric(14, 2),
   category_id uuid not null references public.document_categories(id) on delete restrict,
   status public.document_status not null default 'BARU',
   notes text,
@@ -138,6 +140,7 @@ create table if not exists public.documents (
   constraint documents_agenda_number_unique unique (agenda_number),
   constraint documents_sender_name_not_blank check (length(trim(sender_name)) > 0),
   constraint documents_subject_not_blank check (length(trim(subject)) > 0),
+  constraint documents_amount_positive check (amount is null or amount > 0),
   constraint documents_letter_recipient_required check (
     type = 'INVOICE'
     or (recipient_name is not null and length(trim(recipient_name)) > 0)
@@ -528,6 +531,8 @@ begin
       and new.recipient_name is not distinct from old.recipient_name
       and new.department_id is not distinct from old.department_id
       and new.subject is not distinct from old.subject
+      and new.employee_name is not distinct from old.employee_name
+      and new.amount is not distinct from old.amount
       and new.category_id is not distinct from old.category_id
       and new.notes is not distinct from old.notes
       and new.attachment_url is not distinct from old.attachment_url
