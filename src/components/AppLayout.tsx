@@ -16,7 +16,6 @@ import {
   Menu,
   Search,
   Settings,
-  ShieldCheck,
   LogOut,
   X,
 } from "lucide-react";
@@ -167,19 +166,6 @@ function SidebarContent({
           );
         })}
       </nav>
-
-      <div className="border-t border-white/10 p-4">
-        <div className="rounded-lg bg-white/10 p-3">
-          <div className="flex items-center gap-2 text-xs font-medium text-sky-50">
-            <ShieldCheck className="size-4 text-emerald-300" aria-hidden="true" />
-            Audit trail aktif
-          </div>
-          <p className="mt-2 text-xs leading-5 text-sky-100">
-            Setiap perubahan dokumen tercatat dengan waktu dan pengguna
-            terverifikasi.
-          </p>
-        </div>
-      </div>
     </div>
   );
 }

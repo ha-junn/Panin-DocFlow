@@ -51,12 +51,10 @@ type SearchDocument = {
 
 const validTypes = new Set(["LETTER", "INVOICE"]);
 
-const dateTimeFormatter = new Intl.DateTimeFormat("id-ID", {
+const dateFormatter = new Intl.DateTimeFormat("id-ID", {
   day: "2-digit",
   month: "short",
   year: "numeric",
-  hour: "2-digit",
-  minute: "2-digit",
 });
 
 const currencyFormatter = new Intl.NumberFormat("id-ID", {
@@ -65,8 +63,8 @@ const currencyFormatter = new Intl.NumberFormat("id-ID", {
   maximumFractionDigits: 0,
 });
 
-function formatDateTime(value: string) {
-  return dateTimeFormatter.format(new Date(value));
+function formatDate(value: string) {
+  return dateFormatter.format(new Date(value));
 }
 
 function formatDocumentType(type: DbDocumentType) {
@@ -288,9 +286,6 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                             <p className="text-sm font-semibold text-slate-950">
                               {document.agenda_number}
                             </p>
-                            <p className="mt-1 text-xs text-slate-500">
-                              Dibuat oleh {document.creator?.full_name ?? "-"}
-                            </p>
                           </td>
                           <td className="border-b border-slate-100 px-5 py-4">
                             <span
@@ -305,7 +300,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                             </span>
                           </td>
                           <td className="border-b border-slate-100 px-5 py-4 text-sm text-slate-600">
-                            {formatDateTime(document.received_at)}
+                            {formatDate(document.received_at)}
                           </td>
                           <td className="border-b border-slate-100 px-5 py-4 text-sm font-medium text-slate-900">
                             {document.sender_name}
