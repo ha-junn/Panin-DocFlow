@@ -28,19 +28,16 @@ type RawDocument = {
   subject: string;
   department: { name: string; code: string } | null;
   category: { name: string } | null;
-  creator: { full_name: string } | null;
 };
 
-const dateTimeFormatter = new Intl.DateTimeFormat("id-ID", {
+const dateFormatter = new Intl.DateTimeFormat("id-ID", {
   day: "2-digit",
   month: "short",
   year: "numeric",
-  hour: "2-digit",
-  minute: "2-digit",
 });
 
-function formatDateTime(value: string) {
-  return dateTimeFormatter.format(new Date(value));
+function formatDate(value: string) {
+  return dateFormatter.format(new Date(value));
 }
 
 export default async function DocumentsPage({
@@ -68,12 +65,11 @@ export default async function DocumentsPage({
         recipient_name,
         subject,
         department:departments(name, code),
-        category:document_categories(name),
-        creator:profiles!documents_created_by_fkey(full_name)
+        category:document_categories(name)
       `,
       )
       .eq("type", "LETTER")
-      .order("received_at", { ascending: false })
+      .order("created_at", { ascending: false })
       .limit(100),
   ]);
 
@@ -178,9 +174,6 @@ export default async function DocumentsPage({
                       Pengirim/Vendor
                     </th>
                     <th className="border-b border-slate-200 px-5 py-3">
-                      Perihal
-                    </th>
-                    <th className="border-b border-slate-200 px-5 py-3">
                       Departemen
                     </th>
                     <th className="border-b border-slate-200 px-5 py-3">
@@ -188,6 +181,9 @@ export default async function DocumentsPage({
                     </th>
                     <th className="border-b border-slate-200 px-5 py-3">
                       PIC
+                    </th>
+                    <th className="border-b border-slate-200 px-5 py-3">
+                      Perihal
                     </th>
                     <th className="border-b border-slate-200 px-5 py-3 text-right">
                       Aksi
@@ -205,20 +201,12 @@ export default async function DocumentsPage({
                             <p className="text-sm font-semibold text-slate-950">
                               {document.agenda_number}
                             </p>
-                            <p className="mt-1 text-xs text-slate-500">
-                              Dibuat oleh {document.creator?.full_name ?? "-"}
-                            </p>
                           </td>
                           <td className="border-b border-slate-100 px-5 py-4 text-sm text-slate-600">
-                            {formatDateTime(document.received_at)}
+                            {formatDate(document.received_at)}
                           </td>
                           <td className="border-b border-slate-100 px-5 py-4 text-sm font-medium text-slate-900">
                             {document.sender_name}
-                          </td>
-                          <td className="max-w-sm border-b border-slate-100 px-5 py-4 text-sm text-slate-600">
-                            <span className="line-clamp-2">
-                              {document.subject}
-                            </span>
                           </td>
                           <td className="border-b border-slate-100 px-5 py-4 text-sm text-slate-600">
                             {document.department?.name ?? "-"}
@@ -228,6 +216,11 @@ export default async function DocumentsPage({
                           </td>
                           <td className="border-b border-slate-100 px-5 py-4 text-sm text-slate-600">
                             {document.recipient_name ?? "-"}
+                          </td>
+                          <td className="max-w-sm border-b border-slate-100 px-5 py-4 text-sm text-slate-600">
+                            <span className="line-clamp-2">
+                              {document.subject}
+                            </span>
                           </td>
                           <td className="border-b border-slate-100 px-5 py-4">
                             <div className="flex justify-end gap-2">
