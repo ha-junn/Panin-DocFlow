@@ -287,7 +287,7 @@ async function getDashboardData(supabase: SupabaseClient) {
           creator:profiles!documents_created_by_fkey(full_name)
         `,
         )
-        .order("received_at", { ascending: false })
+        .order("created_at", { ascending: false })
         .limit(5),
     ]);
 

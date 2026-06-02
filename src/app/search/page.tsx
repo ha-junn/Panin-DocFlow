@@ -155,7 +155,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
       creator:profiles!documents_created_by_fkey(full_name)
     `,
     )
-    .order("received_at", { ascending: false })
+    .order("created_at", { ascending: false })
     .limit(200);
 
   if (type) {
