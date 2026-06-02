@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
@@ -21,12 +21,18 @@ import {
   X,
 } from "lucide-react";
 import { signOutAction } from "@/app/login/actions";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 type NavigationItem = {
   label: string;
   href: string;
   icon: LucideIcon;
-  badge: string | null;
+  badgeKey: keyof SidebarCounts | null;
+};
+
+type SidebarCounts = {
+  documents: number | null;
+  invoices: number | null;
 };
 
 const navigationItems: NavigationItem[] = [
@@ -34,37 +40,37 @@ const navigationItems: NavigationItem[] = [
     label: "Dashboard",
     href: "/",
     icon: LayoutDashboard,
-    badge: null,
+    badgeKey: null,
   },
   {
     label: "Pencarian",
     href: "/search",
     icon: Search,
-    badge: null,
+    badgeKey: null,
   },
   {
     label: "Dokumen",
     href: "/documents",
     icon: FileText,
-    badge: "18",
+    badgeKey: "documents",
   },
   {
     label: "Invoice Masuk",
     href: "/invoices",
     icon: ClipboardList,
-    badge: "7",
+    badgeKey: "invoices",
   },
   {
     label: "Laporan",
     href: "/reports",
     icon: FileArchive,
-    badge: null,
+    badgeKey: null,
   },
   {
     label: "Pengaturan",
     href: "/settings/departments",
     icon: Settings,
-    badge: null,
+    badgeKey: null,
   },
 ];
 
@@ -78,7 +84,13 @@ const branchProfile = {
 const runningNotice =
   "Panin DocFlow aktif | Dikembangkan oleh Aprijal | Aktif sejak 02 Juni 2026 | Catat dokumen sesuai tanggal diterima | Pastikan lampiran terbaca jelas | Backup data setiap akhir bulan";
 
-function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
+function SidebarContent({
+  counts,
+  onNavigate,
+}: {
+  counts: SidebarCounts;
+  onNavigate?: () => void;
+}) {
   const pathname = usePathname();
 
   return (
@@ -110,6 +122,10 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
       <nav className="flex-1 space-y-1 px-3 py-5" aria-label="Navigasi utama">
         {navigationItems.map((item) => {
           const Icon = item.icon;
+          const badgeValue =
+            item.badgeKey && counts[item.badgeKey] !== null
+              ? String(counts[item.badgeKey])
+              : null;
           const isActive =
             item.href === "/"
               ? pathname === "/"
@@ -135,7 +151,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
                 aria-hidden="true"
               />
               <span className="min-w-0 flex-1 truncate">{item.label}</span>
-              {item.badge ? (
+              {badgeValue ? (
                 <span
                   className={[
                     "rounded-full px-2 py-0.5 text-xs font-semibold",
@@ -144,7 +160,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
                       : "bg-white/15 text-sky-50",
                   ].join(" ")}
                 >
-                  {item.badge}
+                  {badgeValue}
                 </span>
               ) : null}
             </Link>
@@ -271,11 +287,60 @@ function TopNavbar({ onMenuClick }: { onMenuClick: () => void }) {
 
 export function AppLayout({ children }: { children: ReactNode }) {
   const [isMobileNavOpen, setMobileNavOpen] = useState(false);
+  const [sidebarCounts, setSidebarCounts] = useState<SidebarCounts>({
+    documents: null,
+    invoices: null,
+  });
+
+  useEffect(() => {
+    const supabase = createSupabaseBrowserClient();
+    let isMounted = true;
+
+    async function loadSidebarCounts() {
+      const [documentsResult, invoicesResult] = await Promise.all([
+        supabase
+          .from("documents")
+          .select("id", { count: "exact", head: true })
+          .eq("type", "LETTER"),
+        supabase
+          .from("documents")
+          .select("id", { count: "exact", head: true })
+          .eq("type", "INVOICE"),
+      ]);
+
+      if (!isMounted) {
+        return;
+      }
+
+      setSidebarCounts({
+        documents: documentsResult.count ?? 0,
+        invoices: invoicesResult.count ?? 0,
+      });
+    }
+
+    void loadSidebarCounts();
+
+    const channel = supabase
+      .channel("sidebar-document-counts")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "documents" },
+        () => {
+          void loadSidebarCounts();
+        },
+      )
+      .subscribe();
+
+    return () => {
+      isMounted = false;
+      void supabase.removeChannel(channel);
+    };
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-slate-950">
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-72 lg:block">
-        <SidebarContent />
+        <SidebarContent counts={sidebarCounts} />
       </aside>
 
       {isMobileNavOpen ? (
@@ -298,7 +363,10 @@ export function AppLayout({ children }: { children: ReactNode }) {
                 <X className="size-5" aria-hidden="true" />
               </button>
             </div>
-            <SidebarContent onNavigate={() => setMobileNavOpen(false)} />
+            <SidebarContent
+              counts={sidebarCounts}
+              onNavigate={() => setMobileNavOpen(false)}
+            />
           </div>
         </div>
       ) : null}
