@@ -4,15 +4,10 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
   ArrowUpRight,
-  CalendarDays,
   ClipboardList,
-  Download,
   FileText,
   Inbox,
-  MailPlus,
   MoreHorizontal,
-  Plus,
-  Search,
   Sparkles,
 } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
@@ -543,7 +538,7 @@ function DocumentsTable({ documents }: { documents: DocumentRow[] }) {
   return (
     <section className="rounded-lg border border-slate-200 bg-white shadow-sm">
       <div className="border-b border-slate-200 p-5">
-        <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+        <div>
           <div>
             <p className="text-sm font-semibold text-slate-950">
               Dokumen Terbaru
@@ -552,28 +547,6 @@ function DocumentsTable({ documents }: { documents: DocumentRow[] }) {
               Surat dan invoice terakhir yang masuk ke meja resepsionis.
             </p>
           </div>
-
-          <form action="/search" className="flex flex-col gap-2 sm:flex-row">
-            <div className="relative">
-              <Search
-                className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400"
-                aria-hidden="true"
-              />
-              <input
-                name="q"
-                type="search"
-                placeholder="Cari nomor, vendor, perihal"
-                className="h-10 w-full rounded-lg border border-slate-200 bg-slate-50 pl-9 pr-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-[#0A3A60] focus:bg-white focus:ring-4 focus:ring-[#0A3A60]/10 sm:w-72"
-              />
-            </div>
-            <Link
-              href="/search"
-              className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 transition hover:border-[#0A3A60]/30 hover:bg-slate-50"
-            >
-              <CalendarDays className="size-4" aria-hidden="true" />
-              Pencarian
-            </Link>
-          </form>
         </div>
       </div>
 
@@ -715,30 +688,6 @@ export default async function DashboardPage() {
                 Monitor surat masuk dan invoice dalam satu ruang kerja
                 resepsionis yang cepat, rapi, dan terhubung ke data Supabase.
               </p>
-            </div>
-
-            <div className="flex flex-col gap-2 sm:flex-row">
-              <Link
-                href="/documents/new?type=letter"
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-[#0A3A60] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#082f4f]"
-              >
-                <MailPlus className="size-4" aria-hidden="true" />
-                Tambah Surat
-              </Link>
-              <Link
-                href="/invoices/new"
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-[#D71920] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#b9151b]"
-              >
-                <Plus className="size-4" aria-hidden="true" />
-                Tambah Invoice
-              </Link>
-              <button
-                type="button"
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-[#0A3A60]/30 hover:bg-slate-50"
-              >
-                <Download className="size-4" aria-hidden="true" />
-                Export
-              </button>
             </div>
           </div>
         </section>
