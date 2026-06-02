@@ -228,9 +228,6 @@ export default async function InvoicesPage({ searchParams }: InvoicesPageProps) 
                             <p className="text-sm font-semibold text-slate-950">
                               {invoice.agenda_number}
                             </p>
-                            <p className="mt-1 text-xs text-slate-500">
-                              Dibuat oleh {invoice.creator?.full_name ?? "-"}
-                            </p>
                           </td>
                           <td className="border-b border-slate-100 px-5 py-4">
                             <span className="inline-flex rounded-md border border-red-100 bg-red-50 px-2.5 py-1 text-xs font-semibold text-[#B9151B]">
@@ -240,9 +237,6 @@ export default async function InvoicesPage({ searchParams }: InvoicesPageProps) 
                           <td className="border-b border-slate-100 px-5 py-4">
                             <p className="text-sm font-semibold text-slate-950">
                               {invoice.sender_name}
-                            </p>
-                            <p className="mt-1 text-xs text-slate-500">
-                              {invoice.department?.name ?? "-"}
                             </p>
                           </td>
                           <td className="border-b border-slate-100 px-5 py-4 text-sm font-semibold text-slate-950">
