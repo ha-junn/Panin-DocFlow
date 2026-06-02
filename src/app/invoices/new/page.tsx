@@ -25,9 +25,9 @@ type Department = {
   code: string;
 };
 
-function toDatetimeLocalValue(date: Date) {
+function toDateInputValue(date: Date) {
   const offsetMs = date.getTimezoneOffset() * 60_000;
-  return new Date(date.getTime() - offsetMs).toISOString().slice(0, 16);
+  return new Date(date.getTime() - offsetMs).toISOString().slice(0, 10);
 }
 
 export default async function NewInvoicePage({
@@ -105,13 +105,13 @@ export default async function NewInvoicePage({
               <label className="block">
                 <span className="flex items-center gap-2 text-sm font-medium text-slate-700">
                   <CalendarClock className="size-4 text-slate-400" />
-                  Tanggal dan waktu diterima
+                  Tanggal diterima
                 </span>
                 <input
                   name="received_at"
-                  type="datetime-local"
+                  type="date"
                   required
-                  defaultValue={toDatetimeLocalValue(new Date())}
+                  defaultValue={toDateInputValue(new Date())}
                   className="mt-1.5 h-11 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm text-slate-900 outline-none transition focus:border-[#0A3A60] focus:bg-white focus:ring-4 focus:ring-[#0A3A60]/10"
                 />
               </label>

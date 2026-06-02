@@ -38,12 +38,10 @@ type RawInvoiceDocument = {
   creator: { full_name: string } | null;
 };
 
-const dateTimeFormatter = new Intl.DateTimeFormat("id-ID", {
+const dateFormatter = new Intl.DateTimeFormat("id-ID", {
   day: "2-digit",
   month: "short",
   year: "numeric",
-  hour: "2-digit",
-  minute: "2-digit",
 });
 
 const currencyFormatter = new Intl.NumberFormat("id-ID", {
@@ -52,8 +50,8 @@ const currencyFormatter = new Intl.NumberFormat("id-ID", {
   maximumFractionDigits: 0,
 });
 
-function formatDateTime(value: string) {
-  return dateTimeFormatter.format(new Date(value));
+function formatDate(value: string) {
+  return dateFormatter.format(new Date(value));
 }
 
 function getInvoiceDetail(details: RawInvoiceDocument["invoice_details"]) {
@@ -254,7 +252,7 @@ export default async function InvoicesPage({ searchParams }: InvoicesPageProps) 
                             {getInvoicePic(invoice)}
                           </td>
                           <td className="border-b border-slate-100 px-5 py-4 text-sm text-slate-600">
-                            {formatDateTime(invoice.received_at)}
+                            {formatDate(invoice.received_at)}
                           </td>
                           <td className="border-b border-slate-100 px-5 py-4">
                             <div className="flex justify-end gap-2">

@@ -36,6 +36,10 @@ function parseAmount(value: string) {
   return amount;
 }
 
+function receivedDateToIso(value: string) {
+  return new Date(`${value}T00:00:00`).toISOString();
+}
+
 export async function createInvoiceBatchAction(formData: FormData) {
   const supabase = await createSupabaseServerClient();
   const {
@@ -165,7 +169,7 @@ export async function createInvoiceBatchAction(formData: FormData) {
       .from("documents")
       .insert({
         type: "INVOICE",
-        received_at: new Date(receivedAt).toISOString(),
+        received_at: receivedDateToIso(receivedAt),
         sender_name: vendorName,
         recipient_name: internalPic,
         department_id: departmentId,
