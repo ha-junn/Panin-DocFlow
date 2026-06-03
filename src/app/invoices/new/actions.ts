@@ -9,6 +9,7 @@ const ALLOWED_ATTACHMENT_TYPES = new Set([
   "application/pdf",
   "image/jpeg",
   "image/png",
+  "image/webp",
 ]);
 
 function formString(formData: FormData, key: string) {
@@ -16,9 +17,39 @@ function formString(formData: FormData, key: string) {
 }
 
 function getFileExtension(file: File) {
-  const fallbackExtension = file.type === "application/pdf" ? "pdf" : "bin";
-  const extension = file.name.split(".").pop()?.toLowerCase();
-  return extension || fallbackExtension;
+  if (file.type === "application/pdf") return "pdf";
+  if (file.type === "image/jpeg") return "jpg";
+  if (file.type === "image/png") return "png";
+  if (file.type === "image/webp") return "webp";
+
+  return file.name.split(".").pop()?.toLowerCase() || "bin";
+}
+
+function uploadStamp() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  const hour = String(now.getHours()).padStart(2, "0");
+  const minute = String(now.getMinutes()).padStart(2, "0");
+  const second = String(now.getSeconds()).padStart(2, "0");
+  const random = Math.random().toString(36).slice(2, 6);
+
+  return `${year}-${month}-${day}-${hour}${minute}${second}-${random}`;
+}
+
+function createAttachmentFileName(file: File, prefix: "DOC" | "INV") {
+  const extension = getFileExtension(file);
+  const safeBaseName = file.name
+    .replace(/\.[^/.]+$/, "")
+    .replace(/[^a-zA-Z0-9-_]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+  if (/^(DOC|INV)-\d{4}-\d{2}-\d{2}-\d{6}-[a-z0-9]{4}$/i.test(safeBaseName)) {
+    return `${safeBaseName.toUpperCase()}.${extension}`;
+  }
+
+  return `${prefix}-${uploadStamp()}.${extension}`;
 }
 
 function parseAmount(value: string) {
@@ -129,21 +160,17 @@ export async function createInvoiceBatchAction(formData: FormData) {
 
   if (attachment instanceof File && attachment.size > 0) {
     if (!ALLOWED_ATTACHMENT_TYPES.has(attachment.type)) {
-      redirect("/invoices/new?message=Lampiran hanya boleh PDF, JPG, atau PNG.");
+      redirect("/invoices/new?message=Lampiran hanya boleh PDF atau gambar.");
     }
 
     if (attachment.size > MAX_ATTACHMENT_SIZE) {
       redirect("/invoices/new?message=Ukuran lampiran maksimal 10 MB.");
     }
 
-    const extension = getFileExtension(attachment);
-    const timestamp = Date.now();
-    const safeFileName = attachment.name
-      .replace(/\.[^/.]+$/, "")
-      .replace(/[^a-zA-Z0-9-_]+/g, "-")
-      .replace(/^-+|-+$/g, "")
-      .toLowerCase();
-    const filePath = `${user.id}/invoices/${timestamp}-${safeFileName || "lampiran"}.${extension}`;
+    const filePath = `${user.id}/invoices/${createAttachmentFileName(
+      attachment,
+      "INV",
+    )}`;
 
     const { error: uploadError } = await supabase.storage
       .from("document-attachments")

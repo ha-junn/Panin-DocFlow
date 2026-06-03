@@ -9,6 +9,7 @@ import {
   UserRound,
 } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
+import { CompressedAttachmentInput } from "@/components/CompressedAttachmentInput";
 import { PendingSubmitButton } from "@/components/PendingSubmitButton";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createInvoiceBatchAction } from "./actions";
@@ -207,15 +208,15 @@ export default async function NewInvoicePage({
                   <Paperclip className="size-4 text-slate-400" />
                   Lampiran
                 </span>
-                <input
+                <CompressedAttachmentInput
                   name="attachment"
-                  type="file"
-                  accept="application/pdf,image/jpeg,image/png"
-                  className="mt-3 block w-full text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-[#D71920] file:px-3 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-[#b9151b]"
+                  kind="INV"
+                  tone="red"
                 />
               </label>
               <p className="mt-3 text-xs leading-5 text-slate-500">
-                Format yang diterima: PDF, JPG, PNG. Maksimal 10 MB.
+                Foto dari HP otomatis dikompres menjadi WebP. PDF tetap
+                diupload sebagai PDF. Maksimal 10 MB.
               </p>
             </div>
 
