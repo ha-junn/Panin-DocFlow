@@ -27,6 +27,12 @@ type Department = {
   code: string;
 };
 
+type Category = {
+  id: string;
+  name: string;
+  type: "INVOICE" | "BOTH";
+};
+
 function toDateInputValue(date: Date) {
   const offsetMs = date.getTimezoneOffset() * 60_000;
   return new Date(date.getTime() - offsetMs).toISOString().slice(0, 10);
@@ -44,16 +50,22 @@ export default async function NewInvoicePage({
     redirect("/login");
   }
 
-  const [{ data: departments }, params] = await Promise.all([
+  const [{ data: departments }, { data: categories }, params] = await Promise.all([
     supabase
       .from("departments")
       .select("id, name, code")
       .in("code", ["GA", "HRM"])
       .order("name", { ascending: true }),
+    supabase
+      .from("document_categories")
+      .select("id, name, type")
+      .in("type", ["INVOICE", "BOTH"])
+      .order("name", { ascending: true }),
     searchParams,
   ]);
 
   const departmentOptions = (departments ?? []) as Department[];
+  const categoryOptions = (categories ?? []) as Category[];
 
   return (
     <AppLayout>
@@ -145,6 +157,24 @@ export default async function NewInvoicePage({
                   {departmentOptions.map((department) => (
                     <option key={department.id} value={department.id}>
                       {department.name} ({department.code})
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="block">
+                <span className="text-sm font-medium text-slate-700">
+                  Kategori invoice
+                </span>
+                <select
+                  name="category_id"
+                  required
+                  className="mt-1.5 h-11 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm text-slate-900 outline-none transition focus:border-[#0A3A60] focus:bg-white focus:ring-4 focus:ring-[#0A3A60]/10"
+                >
+                  <option value="">Pilih kategori invoice</option>
+                  {categoryOptions.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
                     </option>
                   ))}
                 </select>

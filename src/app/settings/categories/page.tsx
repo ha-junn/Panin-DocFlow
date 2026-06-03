@@ -164,7 +164,7 @@ export default async function CategoriesSettingsPage({
                   Tambah Kategori
                 </h2>
                 <p className="mt-1 text-sm text-slate-500">
-                  Contoh: Form PR, Transport Dinas, Vendor.
+                  Untuk kategori invoice masuk, pilih tipe Invoice.
                 </p>
               </div>
             </div>

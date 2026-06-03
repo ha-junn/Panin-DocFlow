@@ -135,7 +135,7 @@ export default async function EditDocumentPage({
       supabase
         .from("document_categories")
         .select("id, name, type")
-        .in("type", ["LETTER", "BOTH"])
+        .in("type", ["LETTER", "INVOICE", "BOTH"])
         .order("name", { ascending: true }),
     ]);
 
@@ -145,7 +145,9 @@ export default async function EditDocumentPage({
 
   const detail = document as unknown as EditableDocument;
   const departmentOptions = (departments ?? []) as Department[];
-  const categoryOptions = (categories ?? []) as Category[];
+  const categoryOptions = ((categories ?? []) as Category[]).filter(
+    (category) => category.type === "BOTH" || category.type === detail.type,
+  );
   const invoiceDetail = getInvoiceDetail(detail.invoice_details);
   const isInvoice = detail.type === "INVOICE";
 
@@ -324,26 +326,24 @@ export default async function EditDocumentPage({
                 </select>
               </label>
 
-              {!isInvoice ? (
-                <label className="block md:col-span-2">
-                  <span className="text-sm font-medium text-slate-700">
-                    Kategori
-                  </span>
-                  <select
-                    name="category_id"
-                    required
-                    defaultValue={detail.category_id ?? ""}
-                    className="mt-1.5 h-11 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm text-slate-900 outline-none transition focus:border-[#0A3A60] focus:bg-white focus:ring-4 focus:ring-[#0A3A60]/10"
-                  >
-                    <option value="">Pilih kategori</option>
-                    {categoryOptions.map((category) => (
-                      <option key={category.id} value={category.id}>
-                        {category.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              ) : null}
+              <label className="block md:col-span-2">
+                <span className="text-sm font-medium text-slate-700">
+                  {isInvoice ? "Kategori invoice" : "Kategori"}
+                </span>
+                <select
+                  name="category_id"
+                  required
+                  defaultValue={detail.category_id ?? ""}
+                  className="mt-1.5 h-11 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm text-slate-900 outline-none transition focus:border-[#0A3A60] focus:bg-white focus:ring-4 focus:ring-[#0A3A60]/10"
+                >
+                  <option value="">Pilih kategori</option>
+                  {categoryOptions.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
 
               <label className="block md:col-span-2">
                 <span className="text-sm font-medium text-slate-700">

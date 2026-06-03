@@ -84,6 +84,7 @@ export async function createInvoiceBatchAction(formData: FormData) {
   const receivedAt = formString(formData, "received_at");
   const vendorName = formString(formData, "vendor_name");
   const departmentId = formString(formData, "department_id");
+  const categoryId = formString(formData, "category_id");
   const internalPic = formString(formData, "internal_pic");
   const notes = formString(formData, "notes");
   const invoiceNumbers = formData
@@ -94,9 +95,9 @@ export async function createInvoiceBatchAction(formData: FormData) {
     .map((value) => parseAmount(String(value).trim()));
   const attachment = formData.get("attachment");
 
-  if (!receivedAt || !vendorName || !departmentId || !internalPic) {
+  if (!receivedAt || !vendorName || !departmentId || !categoryId || !internalPic) {
     redirect(
-      "/invoices/new?message=Lengkapi vendor, tanggal diterima, departemen, dan PIC.",
+      "/invoices/new?message=Lengkapi vendor, tanggal diterima, departemen, kategori invoice, dan PIC.",
     );
   }
 
@@ -143,16 +144,15 @@ export async function createInvoiceBatchAction(formData: FormData) {
 
   const { data: category, error: categoryError } = await supabase
     .from("document_categories")
-    .select("id")
-    .eq("name", "Vendor")
+    .select("id, name, type")
+    .eq("id", categoryId)
     .in("type", ["INVOICE", "BOTH"])
-    .limit(1)
-    .single();
+    .maybeSingle();
 
   if (categoryError || !category) {
     console.error("Failed to find invoice category", categoryError);
     redirect(
-      "/invoices/new?message=Kategori Vendor untuk invoice belum tersedia di Supabase.",
+      "/invoices/new?message=Kategori invoice belum tersedia atau bukan tipe invoice.",
     );
   }
 

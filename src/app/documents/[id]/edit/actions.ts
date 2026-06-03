@@ -80,7 +80,7 @@ export async function updateDocumentAction(formData: FormData) {
     !recipientName ||
     !departmentId ||
     !subject ||
-    (documentType === "LETTER" && !categoryId)
+    !categoryId
   ) {
     redirect(
       `/documents/${documentId}/edit?message=${encodeURIComponent(
@@ -138,10 +138,10 @@ export async function updateDocumentAction(formData: FormData) {
     department_id: departmentId,
     subject,
     notes,
+    category_id: categoryId,
     updated_by: user.id,
     ...(documentType === "LETTER"
       ? {
-          category_id: categoryId,
           letter_number: letterNumber,
           letter_date: letterDate,
           employee_name: employeeName,
