@@ -39,6 +39,8 @@ type InvoiceDocument = {
   recipient_name: string | null;
   subject: string;
   notes: string | null;
+  employee_name: string | null;
+  amount: number | null;
   attachment_url: string | null;
   created_at: string;
   updated_at: string;
@@ -139,6 +141,8 @@ export default async function InvoiceDetailPage({
         recipient_name,
         subject,
         notes,
+        employee_name,
+        amount,
         attachment_url,
         created_at,
         updated_at,
@@ -174,7 +178,7 @@ export default async function InvoiceDetailPage({
   const detail = invoice as unknown as InvoiceDocument;
   const invoiceDetail = getInvoiceDetail(detail.invoice_details);
   const timeline = (events ?? []) as unknown as DocumentEvent[];
-  const amount = Number(invoiceDetail?.amount ?? 0);
+  const amount = Number(invoiceDetail?.amount ?? detail.amount ?? 0);
   let attachmentUrl: string | null = null;
 
   if (detail.attachment_url) {
@@ -291,6 +295,12 @@ export default async function InvoiceDetailPage({
                   label="Nominal"
                   value={amount > 0 ? currencyFormatter.format(amount) : "-"}
                 />
+                {detail.employee_name ? (
+                  <DetailItem
+                    label="Nama karyawan"
+                    value={detail.employee_name}
+                  />
+                ) : null}
                 <DetailItem label="Dibuat oleh" value={detail.creator?.full_name} />
                 <DetailItem
                   label="Terakhir diubah oleh"

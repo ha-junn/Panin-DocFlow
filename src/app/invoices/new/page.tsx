@@ -13,6 +13,7 @@ import { LoadingLink } from "@/components/LoadingLink";
 import { PendingSubmitButton } from "@/components/PendingSubmitButton";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createInvoiceBatchAction } from "./actions";
+import { BpkuRows } from "./BpkuRows";
 import { InvoiceRows } from "./InvoiceRows";
 
 type NewInvoicePageProps = {
@@ -207,6 +208,19 @@ export default async function NewInvoicePage({
                 </p>
               </div>
               <InvoiceRows />
+            </div>
+
+            <div className="border-t border-slate-200 pt-5">
+              <div className="mb-4">
+                <h2 className="text-sm font-semibold text-slate-950">
+                  Daftar BPKU
+                </h2>
+                <p className="mt-1 text-sm text-slate-500">
+                  Khusus kategori BPKU. Tambahkan beberapa nama karyawan dan
+                  total BPKU jika satu vendor mengirim lebih dari satu lembar.
+                </p>
+              </div>
+              <BpkuRows />
 
               <label className="mt-5 block">
                 <span className="text-sm font-medium text-slate-700">
