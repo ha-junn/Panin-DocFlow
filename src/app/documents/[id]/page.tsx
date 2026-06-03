@@ -89,6 +89,10 @@ function formatDate(value: string | null) {
   return value ? dateFormatter.format(new Date(value)) : null;
 }
 
+function formatRequiredDate(value: string) {
+  return dateFormatter.format(new Date(value));
+}
+
 function formatCurrency(value: number | null) {
   return value ? currencyFormatter.format(value) : null;
 }
@@ -278,7 +282,7 @@ export default async function DocumentDetailPage({
               <div className="mt-5 grid gap-5 md:grid-cols-2">
                 <DetailItem
                   label="Tanggal diterima"
-                  value={formatDateTime(detail.received_at)}
+                  value={formatRequiredDate(detail.received_at)}
                 />
                 <DetailItem label="Nomor surat" value={detail.letter_number} />
                 <DetailItem
@@ -376,10 +380,13 @@ export default async function DocumentDetailPage({
                 </h2>
               </div>
               <div className="mt-5 space-y-4">
-                <DetailItem label="Dibuat" value={formatDateTime(detail.created_at)} />
+                <DetailItem
+                  label="Dibuat"
+                  value={formatRequiredDate(detail.created_at)}
+                />
                 <DetailItem
                   label="Terakhir diubah"
-                  value={formatDateTime(detail.updated_at)}
+                  value={formatRequiredDate(detail.updated_at)}
                 />
               </div>
             </div>

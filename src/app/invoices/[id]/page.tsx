@@ -65,6 +65,12 @@ const dateTimeFormatter = new Intl.DateTimeFormat("id-ID", {
   minute: "2-digit",
 });
 
+const dateFormatter = new Intl.DateTimeFormat("id-ID", {
+  day: "2-digit",
+  month: "long",
+  year: "numeric",
+});
+
 const currencyFormatter = new Intl.NumberFormat("id-ID", {
   style: "currency",
   currency: "IDR",
@@ -73,6 +79,10 @@ const currencyFormatter = new Intl.NumberFormat("id-ID", {
 
 function formatDateTime(value: string) {
   return dateTimeFormatter.format(new Date(value));
+}
+
+function formatDate(value: string) {
+  return dateFormatter.format(new Date(value));
 }
 
 function getInvoiceDetail(details: InvoiceDocument["invoice_details"]) {
@@ -255,7 +265,7 @@ export default async function InvoiceDetailPage({
               <div className="mt-5 grid gap-5 md:grid-cols-2">
                 <DetailItem
                   label="Tanggal diterima"
-                  value={formatDateTime(detail.received_at)}
+                  value={formatDate(detail.received_at)}
                 />
                 <DetailItem
                   label="Nomor invoice"
@@ -357,10 +367,10 @@ export default async function InvoiceDetailPage({
                 </h2>
               </div>
               <div className="mt-5 space-y-4">
-                <DetailItem label="Dibuat" value={formatDateTime(detail.created_at)} />
+                <DetailItem label="Dibuat" value={formatDate(detail.created_at)} />
                 <DetailItem
                   label="Terakhir diubah"
-                  value={formatDateTime(detail.updated_at)}
+                  value={formatDate(detail.updated_at)}
                 />
               </div>
             </div>

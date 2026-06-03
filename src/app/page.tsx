@@ -13,6 +13,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
+import { DigitalClock } from "@/components/DigitalClock";
 import { SuccessToast } from "@/components/SuccessToast";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -729,21 +730,24 @@ export default async function DashboardPage({
               </p>
             </div>
 
-            <div className="flex flex-col gap-2 sm:flex-row">
-              <Link
-                href="/documents/new?type=letter"
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-[#0A3A60] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#082f4f]"
-              >
-                <MailPlus className="size-4" aria-hidden="true" />
-                Tambah Surat
-              </Link>
-              <Link
-                href="/invoices/new"
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-[#D71920] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#b9151b]"
-              >
-                <Plus className="size-4" aria-hidden="true" />
-                Tambah Invoice
-              </Link>
+            <div className="flex w-full flex-col gap-3 sm:w-auto">
+              <DigitalClock />
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <Link
+                  href="/documents/new?type=letter"
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-[#0A3A60] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#082f4f]"
+                >
+                  <MailPlus className="size-4" aria-hidden="true" />
+                  Tambah Surat
+                </Link>
+                <Link
+                  href="/invoices/new"
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-[#D71920] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#b9151b]"
+                >
+                  <Plus className="size-4" aria-hidden="true" />
+                  Tambah Invoice
+                </Link>
+              </div>
             </div>
           </div>
         </section>
