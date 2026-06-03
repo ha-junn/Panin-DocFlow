@@ -92,9 +92,12 @@ export async function createLetterAction(formData: FormData) {
   const recipientName = requiredString(formData, "recipient_name");
   const departmentId = requiredString(formData, "department_id");
   const subject = requiredString(formData, "subject");
-  const employeeName = requiredString(formData, "employee_name");
-  const amountInput = requiredString(formData, "document_amount");
-  const amount = parseOptionalRupiah(amountInput);
+  const employeeNames = formData
+    .getAll("employee_name")
+    .map((value) => String(value).trim());
+  const amounts = formData
+    .getAll("document_amount")
+    .map((value) => parseOptionalRupiah(String(value).trim()));
   const categoryId = requiredString(formData, "category_id");
   const notes = requiredString(formData, "notes");
   const attachment = formData.get("attachment");
@@ -111,11 +114,29 @@ export async function createLetterAction(formData: FormData) {
     );
   }
 
-  if (amount === undefined) {
+  if (amounts.some((amount) => amount === undefined)) {
     redirect(
       "/documents/new?type=letter&message=Total harus berupa angka Rupiah lebih dari 0 atau dikosongkan.",
     );
   }
+
+  const employeeItems = employeeNames
+    .map((employeeName, index) => ({
+      employeeName: employeeName || null,
+      amount: amounts[index] ?? null,
+    }))
+    .filter((item) => item.employeeName || item.amount);
+
+  if (employeeItems.some((item) => !item.employeeName)) {
+    redirect(
+      "/documents/new?type=letter&message=Lengkapi nama karyawan pada setiap baris yang diisi.",
+    );
+  }
+
+  const documentsToCreate =
+    employeeItems.length > 0
+      ? employeeItems
+      : [{ employeeName: null, amount: null }];
 
   let attachmentUrl: string | null = null;
 
@@ -156,7 +177,7 @@ export async function createLetterAction(formData: FormData) {
     attachmentUrl = filePath;
   }
 
-  const { error } = await supabase.from("documents").insert({
+  const payload = documentsToCreate.map((item) => ({
     type: "LETTER",
     letter_number: letterNumber || null,
     letter_date: letterDate || null,
@@ -165,14 +186,16 @@ export async function createLetterAction(formData: FormData) {
     recipient_name: recipientName,
     department_id: departmentId,
     subject: subject || "Tanpa perihal",
-    employee_name: employeeName || null,
-    amount,
+    employee_name: item.employeeName,
+    amount: item.amount,
     category_id: categoryId,
     notes: notes || null,
     attachment_url: attachmentUrl,
     created_by: user.id,
     updated_by: user.id,
-  });
+  }));
+
+  const { error } = await supabase.from("documents").insert(payload);
 
   if (error) {
     console.error("Failed to create letter", error);
@@ -188,5 +211,6 @@ export async function createLetterAction(formData: FormData) {
   }
 
   revalidatePath("/");
+  revalidatePath("/documents");
   redirect("/?created=letter");
 }

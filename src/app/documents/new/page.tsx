@@ -14,6 +14,7 @@ import { LoadingLink } from "@/components/LoadingLink";
 import { PendingSubmitButton } from "@/components/PendingSubmitButton";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createLetterAction } from "./actions";
+import { EmployeeRows } from "./EmployeeRows";
 
 type NewDocumentPageProps = {
   searchParams: Promise<{
@@ -241,31 +242,17 @@ export default async function NewDocumentPage({
                 />
               </label>
 
-              <div className="grid gap-5 md:col-span-2 md:grid-cols-2">
-                <label className="block">
-                  <span className="text-sm font-medium text-slate-700">
-                    Nama karyawan
-                  </span>
-                  <input
-                    name="employee_name"
-                    type="text"
-                    placeholder="Opsional, contoh: Aprijal"
-                    className="mt-1.5 h-11 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#0A3A60] focus:bg-white focus:ring-4 focus:ring-[#0A3A60]/10"
-                  />
-                </label>
-
-                <label className="block">
-                  <span className="text-sm font-medium text-slate-700">
-                    Total
-                  </span>
-                  <input
-                    name="document_amount"
-                    type="text"
-                    inputMode="numeric"
-                    placeholder="Opsional, contoh: Rp 150.000"
-                    className="mt-1.5 h-11 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#0A3A60] focus:bg-white focus:ring-4 focus:ring-[#0A3A60]/10"
-                  />
-                </label>
+              <div className="md:col-span-2">
+                <div className="mb-4">
+                  <h2 className="text-sm font-semibold text-slate-950">
+                    Daftar karyawan
+                  </h2>
+                  <p className="mt-1 text-sm text-slate-500">
+                    Opsional. Gunakan untuk BPKU, lembur, transport, atau
+                    dokumen lain yang berisi beberapa nama karyawan.
+                  </p>
+                </div>
+                <EmployeeRows />
               </div>
 
               <label className="block md:col-span-2">

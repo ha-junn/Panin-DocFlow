@@ -93,12 +93,6 @@ export async function createInvoiceBatchAction(formData: FormData) {
   const amounts = formData
     .getAll("amount")
     .map((value) => parseAmount(String(value).trim()));
-  const bpkuEmployeeNames = formData
-    .getAll("bpku_employee_name")
-    .map((value) => String(value).trim());
-  const bpkuAmounts = formData
-    .getAll("bpku_amount")
-    .map((value) => parseAmount(String(value).trim()));
   const attachment = formData.get("attachment");
 
   if (!receivedAt || !vendorName || !departmentId || !categoryId || !internalPic) {
@@ -125,23 +119,8 @@ export async function createInvoiceBatchAction(formData: FormData) {
     amount: amounts[index] ?? null,
   })).filter((item) => item.invoiceNumber || item.amount);
 
-  const bpkuItems = bpkuEmployeeNames
-    .map((employeeName, index) => ({
-      employeeName: employeeName || null,
-      amount: bpkuAmounts[index] ?? null,
-    }))
-    .filter((item) => item.employeeName || item.amount);
-
-  if (bpkuItems.some((item) => !item.employeeName)) {
-    redirect(
-      "/invoices/new?message=Lengkapi nama karyawan pada setiap baris BPKU yang diisi.",
-    );
-  }
-
   const itemsToCreate =
-    invoiceItems.length > 0 || bpkuItems.length > 0
-      ? invoiceItems
-      : [{ invoiceNumber: null, amount: null }];
+    invoiceItems.length > 0 ? invoiceItems : [{ invoiceNumber: null, amount: null }];
 
   if (filledInvoiceNumbers.length > 0) {
     const { data: existingInvoices, error: existingError } = await supabase
@@ -174,12 +153,6 @@ export async function createInvoiceBatchAction(formData: FormData) {
     console.error("Failed to find invoice category", categoryError);
     redirect(
       "/invoices/new?message=Kategori invoice belum tersedia atau bukan tipe invoice.",
-    );
-  }
-
-  if (bpkuItems.length > 0 && !category.name.toUpperCase().includes("BPKU")) {
-    redirect(
-      "/invoices/new?message=Daftar BPKU hanya bisa digunakan saat kategori invoice adalah BPKU.",
     );
   }
 
@@ -256,47 +229,6 @@ export async function createInvoiceBatchAction(formData: FormData) {
     if (detailError) {
       console.error("Failed to create invoice detail", detailError);
       redirect("/invoices/new?message=Gagal menyimpan detail invoice.");
-    }
-  }
-
-  for (const item of bpkuItems) {
-    const subject = `BPKU ${item.employeeName} - ${vendorName}`;
-
-    const { data: document, error: documentError } = await supabase
-      .from("documents")
-      .insert({
-        type: "INVOICE",
-        received_at: receivedDateToIso(receivedAt),
-        sender_name: vendorName,
-        recipient_name: internalPic,
-        department_id: departmentId,
-        subject,
-        category_id: category.id,
-        notes: notes || null,
-        attachment_url: attachmentUrl,
-        employee_name: item.employeeName,
-        amount: item.amount,
-        created_by: user.id,
-        updated_by: user.id,
-      })
-      .select("id")
-      .single();
-
-    if (documentError || !document) {
-      console.error("Failed to create BPKU document", documentError);
-      redirect("/invoices/new?message=Gagal menyimpan salah satu baris BPKU.");
-    }
-
-    const { error: detailError } = await supabase.from("invoice_details").insert({
-      document_id: document.id,
-      invoice_number: null,
-      amount: item.amount,
-      internal_pic: internalPic,
-    });
-
-    if (detailError) {
-      console.error("Failed to create BPKU detail", detailError);
-      redirect("/invoices/new?message=Gagal menyimpan detail BPKU.");
     }
   }
 

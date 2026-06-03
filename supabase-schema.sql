@@ -1093,7 +1093,6 @@ values
   ('Teguran Lisan', 'LETTER'),
   ('Vendor', 'INVOICE'),
   ('Nota Pemindahan (NP)', 'INVOICE'),
-  ('Biaya Pemakaian Kendaraan Umum (BPKU)', 'INVOICE'),
   ('Internal', 'BOTH')
 on conflict (name, type) do nothing;
 
