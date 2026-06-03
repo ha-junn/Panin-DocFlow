@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
   ArrowUpRight,
@@ -11,6 +10,7 @@ import {
 } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
 import { ConfirmSubmitButton } from "@/components/ConfirmSubmitButton";
+import { LoadingLink } from "@/components/LoadingLink";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { deleteDocumentAction } from "../documents/actions";
 
@@ -85,6 +85,7 @@ export default async function InvoicesPage({ searchParams }: InvoicesPageProps) 
         id,
         agenda_number,
         received_at,
+        created_at,
         sender_name,
         recipient_name,
         subject,
@@ -94,7 +95,7 @@ export default async function InvoicesPage({ searchParams }: InvoicesPageProps) 
       `,
       )
       .eq("type", "INVOICE")
-      .order("received_at", { ascending: false })
+      .order("created_at", { ascending: false })
       .limit(100),
   ]);
 
@@ -120,13 +121,14 @@ export default async function InvoicesPage({ searchParams }: InvoicesPageProps) 
               </p>
             </div>
 
-            <Link
+            <LoadingLink
               href="/invoices/new"
+              pendingLabel="Membuka..."
               className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[#D71920] px-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#b9151b]"
             >
               <Plus className="size-4" aria-hidden="true" />
               Tambah Invoice
-            </Link>
+            </LoadingLink>
           </div>
         </section>
 
@@ -167,13 +169,14 @@ export default async function InvoicesPage({ searchParams }: InvoicesPageProps) 
                 menu Pencarian.
               </p>
             </div>
-            <Link
+            <LoadingLink
               href="/search?type=INVOICE"
+              pendingLabel="Membuka..."
               className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[#D71920] px-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#b9151b]"
             >
               <ClipboardList className="size-4" aria-hidden="true" />
               Cari Invoice
-            </Link>
+            </LoadingLink>
           </div>
 
           {error ? (
@@ -250,8 +253,9 @@ export default async function InvoicesPage({ searchParams }: InvoicesPageProps) 
                           </td>
                           <td className="border-b border-slate-100 px-5 py-4">
                             <div className="flex justify-end gap-2">
-                              <Link
+                              <LoadingLink
                                 href={`/invoices/${invoice.id}`}
+                                pendingLabel="Membuka..."
                                 className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-600 transition hover:border-[#D71920]/30 hover:bg-red-50 hover:text-[#B9151B]"
                               >
                                 Detail
@@ -259,7 +263,7 @@ export default async function InvoicesPage({ searchParams }: InvoicesPageProps) 
                                   className="size-4"
                                   aria-hidden="true"
                                 />
-                              </Link>
+                              </LoadingLink>
                               <form action={deleteDocumentAction}>
                                 <input
                                   type="hidden"

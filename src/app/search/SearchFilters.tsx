@@ -1,9 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState, useTransition } from "react";
-import { Filter, RotateCcw, Search } from "lucide-react";
+import { Filter, Loader2, RotateCcw, Search } from "lucide-react";
+import { LoadingLink } from "@/components/LoadingLink";
 
 type SearchCategory = {
   id: string;
@@ -130,17 +130,22 @@ export function SearchFilters({
           className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[#0A3A60] px-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#082f4f] disabled:cursor-not-allowed disabled:opacity-70"
           disabled={isPending}
         >
-          <Filter className="size-4" aria-hidden="true" />
+          {isPending ? (
+            <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+          ) : (
+            <Filter className="size-4" aria-hidden="true" />
+          )}
           {isPending ? "Memuat" : "Cari"}
         </button>
 
-        <Link
+        <LoadingLink
           href="/search"
+          pendingLabel="Reset..."
           className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-600 transition hover:border-[#0A3A60]/30 hover:bg-slate-50 hover:text-[#0A3A60]"
         >
           <RotateCcw className="size-4" aria-hidden="true" />
           Reset
-        </Link>
+        </LoadingLink>
       </div>
     </form>
   );

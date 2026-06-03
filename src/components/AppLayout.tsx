@@ -1,9 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import { useFormStatus } from "react-dom";
 import type { ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
@@ -17,9 +17,11 @@ import {
   Search,
   Settings,
   LogOut,
+  Loader2,
   X,
 } from "lucide-react";
 import { signOutAction } from "@/app/login/actions";
+import { LoadingLink } from "@/components/LoadingLink";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 type NavigationItem = {
@@ -131,7 +133,7 @@ function SidebarContent({
               : pathname === item.href || pathname.startsWith(`${item.href}/`);
 
           return (
-            <Link
+            <LoadingLink
               key={item.label}
               href={item.href}
               onClick={onNavigate}
@@ -162,11 +164,31 @@ function SidebarContent({
                   {badgeValue}
                 </span>
               ) : null}
-            </Link>
+            </LoadingLink>
           );
         })}
       </nav>
     </div>
+  );
+}
+
+function SignOutButton() {
+  const { pending } = useFormStatus();
+
+  return (
+    <button
+      type="submit"
+      disabled={pending}
+      className="inline-flex size-10 items-center justify-center rounded-lg border border-slate-200 text-slate-600 transition hover:border-red-200 hover:bg-red-50 hover:text-[#D71920] disabled:cursor-not-allowed disabled:opacity-70"
+      aria-label="Keluar"
+      title="Keluar"
+    >
+      {pending ? (
+        <Loader2 className="size-5 animate-spin" aria-hidden="true" />
+      ) : (
+        <LogOut className="size-5" aria-hidden="true" />
+      )}
+    </button>
   );
 }
 
@@ -257,14 +279,7 @@ function TopNavbar({ onMenuClick }: { onMenuClick: () => void }) {
         </button>
 
         <form action={signOutAction}>
-          <button
-            type="submit"
-            className="inline-flex size-10 items-center justify-center rounded-lg border border-slate-200 text-slate-600 transition hover:border-red-200 hover:bg-red-50 hover:text-[#D71920]"
-            aria-label="Keluar"
-            title="Keluar"
-          >
-            <LogOut className="size-5" aria-hidden="true" />
-          </button>
+          <SignOutButton />
         </form>
       </div>
     </header>

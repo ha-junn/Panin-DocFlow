@@ -1,5 +1,4 @@
 import { redirect } from "next/navigation";
-import Link from "next/link";
 import {
   ArrowLeft,
   CalendarClock,
@@ -12,6 +11,7 @@ import {
 } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
 import { ConfirmSubmitButton } from "@/components/ConfirmSubmitButton";
+import { LoadingLink } from "@/components/LoadingLink";
 import { deleteDocumentAction } from "@/app/documents/actions";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -189,13 +189,14 @@ export default async function InvoiceDetailPage({
     <AppLayout>
       <div className="space-y-6">
         <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-          <Link
+          <LoadingLink
             href="/invoices"
+            pendingLabel="Kembali..."
             className="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 transition hover:text-[#D71920]"
           >
             <ArrowLeft className="size-4" aria-hidden="true" />
             Kembali ke daftar invoice
-          </Link>
+          </LoadingLink>
 
           <div className="mt-5 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div>
@@ -211,13 +212,14 @@ export default async function InvoiceDetailPage({
             </div>
 
             <div className="flex flex-col gap-2 sm:flex-row">
-              <Link
+              <LoadingLink
                 href={`/documents/${detail.id}/edit`}
+                pendingLabel="Membuka..."
                 className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-[#D71920]/30 hover:bg-red-50 hover:text-[#B9151B]"
               >
                 <Pencil className="size-4" aria-hidden="true" />
                 Edit Invoice
-              </Link>
+              </LoadingLink>
 
               <form action={deleteDocumentAction}>
                 <input type="hidden" name="id" value={detail.id} />

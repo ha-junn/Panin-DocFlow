@@ -8,9 +8,9 @@ import {
   Send,
   UserRound,
 } from "lucide-react";
-import Link from "next/link";
 import { AppLayout } from "@/components/AppLayout";
 import { CompressedAttachmentInput } from "@/components/CompressedAttachmentInput";
+import { LoadingLink } from "@/components/LoadingLink";
 import { PendingSubmitButton } from "@/components/PendingSubmitButton";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createLetterAction } from "./actions";
@@ -83,13 +83,14 @@ export default async function NewDocumentPage({
         <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <Link
+              <LoadingLink
                 href="/"
+                pendingLabel="Kembali..."
                 className="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 transition hover:text-[#0A3A60]"
               >
                 <ArrowLeft className="size-4" aria-hidden="true" />
                 Kembali ke dashboard
-              </Link>
+              </LoadingLink>
               <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-[#0A3A60]/15 bg-[#0A3A60]/5 px-3 py-1 text-xs font-semibold text-[#0A3A60]">
                 <FileText className="size-3.5" aria-hidden="true" />
                 Dokumen

@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
   BarChart3,
@@ -13,6 +12,8 @@ import {
   RotateCcw,
 } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
+import { LoadingLink } from "@/components/LoadingLink";
+import { PendingSubmitButton } from "@/components/PendingSubmitButton";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 type ReportsPageProps = {
@@ -352,13 +353,14 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
               </p>
             </div>
 
-            <Link
+            <LoadingLink
               href={exportHref}
+              pendingLabel="Export..."
               className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[#0A3A60] px-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#082f4f]"
             >
               <Download className="size-4" aria-hidden="true" />
               Export CSV
-            </Link>
+            </LoadingLink>
           </div>
         </section>
 
@@ -438,23 +440,24 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
             </label>
 
             <div className="flex items-end">
-              <button
-                type="submit"
+              <PendingSubmitButton
                 className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-[#0A3A60] px-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#082f4f] xl:w-auto"
+                pendingLabel="Memuat..."
               >
                 <Filter className="size-4" aria-hidden="true" />
                 Tampilkan
-              </button>
+              </PendingSubmitButton>
             </div>
 
             <div className="flex items-end">
-              <Link
+              <LoadingLink
                 href="/reports"
+                pendingLabel="Reset..."
                 className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-600 transition hover:border-[#0A3A60]/30 hover:bg-slate-50 hover:text-[#0A3A60] xl:w-auto"
               >
                 <RotateCcw className="size-4" aria-hidden="true" />
                 Reset
-              </Link>
+              </LoadingLink>
             </div>
           </form>
         </section>
@@ -598,17 +601,18 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
                             {getPic(document)}
                           </td>
                           <td className="border-b border-slate-100 px-5 py-4 text-right">
-                            <Link
+                            <LoadingLink
                               href={
                                 document.type === "INVOICE"
                                   ? `/invoices/${document.id}`
                                   : `/documents/${document.id}`
                               }
+                              pendingLabel="Membuka..."
                               className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-600 transition hover:border-[#0A3A60]/30 hover:bg-slate-50 hover:text-[#0A3A60]"
                             >
                               Detail
                               <FileText className="size-4" aria-hidden="true" />
-                            </Link>
+                            </LoadingLink>
                           </td>
                         </tr>
                       );

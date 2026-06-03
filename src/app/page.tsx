@@ -1,6 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { LucideIcon } from "lucide-react";
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
   ArrowUpRight,
@@ -14,6 +13,7 @@ import {
 } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
 import { DigitalClock } from "@/components/DigitalClock";
+import { LoadingLink } from "@/components/LoadingLink";
 import { SuccessToast } from "@/components/SuccessToast";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -638,18 +638,19 @@ function DocumentsTable({ documents }: { documents: DocumentRow[] }) {
                     {document.pic}
                   </td>
                   <td className="border-b border-slate-100 px-5 py-4 text-right">
-                    <Link
+                    <LoadingLink
                       href={
                         document.type === "Invoice"
                           ? `/invoices/${document.id}`
                           : `/documents/${document.id}`
                       }
+                      pendingLabel=""
                       className="inline-flex size-9 items-center justify-center rounded-lg text-slate-500 transition hover:bg-white hover:text-[#0A3A60] hover:shadow-sm"
                       aria-label={`Lihat detail ${document.agenda}`}
                       title="Lihat detail"
                     >
                       <MoreHorizontal className="size-5" aria-hidden="true" />
-                    </Link>
+                    </LoadingLink>
                   </td>
                 </tr>
               ))
@@ -673,13 +674,14 @@ function DocumentsTable({ documents }: { documents: DocumentRow[] }) {
         <p className="text-sm text-slate-500">
           Menampilkan {formatNumber(documents.length)} dokumen terbaru.
         </p>
-        <Link
+        <LoadingLink
           href="/search"
+          pendingLabel="Membuka..."
           className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-[#0A3A60]/30 hover:bg-slate-50"
         >
           Lihat semua dokumen
           <ArrowUpRight className="size-4" aria-hidden="true" />
-        </Link>
+        </LoadingLink>
       </div>
     </section>
   );
@@ -733,20 +735,22 @@ export default async function DashboardPage({
             <div className="flex w-full flex-col gap-3 sm:w-auto">
               <DigitalClock />
               <div className="flex flex-col gap-2 sm:flex-row">
-                <Link
+                <LoadingLink
                   href="/documents/new?type=letter"
+                  pendingLabel="Membuka..."
                   className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-[#0A3A60] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#082f4f]"
                 >
                   <MailPlus className="size-4" aria-hidden="true" />
                   Tambah Surat
-                </Link>
-                <Link
+                </LoadingLink>
+                <LoadingLink
                   href="/invoices/new"
+                  pendingLabel="Membuka..."
                   className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-[#D71920] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#b9151b]"
                 >
                   <Plus className="size-4" aria-hidden="true" />
                   Tambah Invoice
-                </Link>
+                </LoadingLink>
               </div>
             </div>
           </div>

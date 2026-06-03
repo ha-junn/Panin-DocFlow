@@ -1,5 +1,4 @@
 import { redirect } from "next/navigation";
-import Link from "next/link";
 import {
   ArrowLeft,
   CalendarClock,
@@ -12,6 +11,7 @@ import {
 } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
 import { ConfirmSubmitButton } from "@/components/ConfirmSubmitButton";
+import { LoadingLink } from "@/components/LoadingLink";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { deleteDocumentAction } from "../actions";
 
@@ -204,13 +204,14 @@ export default async function DocumentDetailPage({
     <AppLayout>
       <div className="space-y-6">
         <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-          <Link
+          <LoadingLink
             href="/"
+            pendingLabel="Kembali..."
             className="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 transition hover:text-[#0A3A60]"
           >
             <ArrowLeft className="size-4" aria-hidden="true" />
             Kembali ke dashboard
-          </Link>
+          </LoadingLink>
 
           <div className="mt-5 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div>
@@ -228,13 +229,14 @@ export default async function DocumentDetailPage({
             </div>
 
             <div className="flex flex-col gap-2 sm:flex-row">
-              <Link
+              <LoadingLink
                 href={`/documents/${detail.id}/edit`}
+                pendingLabel="Membuka..."
                 className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-[#0A3A60]/30 hover:bg-slate-50 hover:text-[#0A3A60]"
               >
                 <Pencil className="size-4" aria-hidden="true" />
                 Edit Dokumen
-              </Link>
+              </LoadingLink>
 
               <form action={deleteDocumentAction}>
                 <input type="hidden" name="id" value={detail.id} />

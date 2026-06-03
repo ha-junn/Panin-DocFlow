@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
   ArrowUpRight,
@@ -10,6 +9,7 @@ import {
 } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
 import { ConfirmSubmitButton } from "@/components/ConfirmSubmitButton";
+import { LoadingLink } from "@/components/LoadingLink";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { deleteDocumentAction } from "./actions";
 
@@ -94,13 +94,14 @@ export default async function DocumentsPage({
               </p>
             </div>
 
-            <Link
+            <LoadingLink
               href="/documents/new?type=letter"
+              pendingLabel="Membuka..."
               className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[#0A3A60] px-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#082f4f]"
             >
               <FilePlus2 className="size-4" aria-hidden="true" />
               Tambah Surat
-            </Link>
+            </LoadingLink>
           </div>
         </section>
 
@@ -141,13 +142,14 @@ export default async function DocumentsPage({
                 tanggal, dan PIC.
               </p>
             </div>
-            <Link
+            <LoadingLink
               href="/search"
+              pendingLabel="Membuka..."
               className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[#0A3A60] px-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#082f4f]"
             >
               <Inbox className="size-4" aria-hidden="true" />
               Buka Pencarian
-            </Link>
+            </LoadingLink>
           </div>
 
           {error ? (
@@ -224,8 +226,9 @@ export default async function DocumentsPage({
                           </td>
                           <td className="border-b border-slate-100 px-5 py-4">
                             <div className="flex justify-end gap-2">
-                              <Link
+                              <LoadingLink
                                 href={`/documents/${document.id}`}
+                                pendingLabel="Membuka..."
                                 className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-600 transition hover:border-[#0A3A60]/30 hover:bg-slate-50 hover:text-[#0A3A60]"
                               >
                                 Detail
@@ -233,7 +236,7 @@ export default async function DocumentsPage({
                                   className="size-4"
                                   aria-hidden="true"
                                 />
-                              </Link>
+                              </LoadingLink>
                               <form action={deleteDocumentAction}>
                                 <input
                                   type="hidden"

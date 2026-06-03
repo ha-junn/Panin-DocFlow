@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
   ArrowUpRight,
@@ -8,6 +7,7 @@ import {
   UserRound,
 } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
+import { LoadingLink } from "@/components/LoadingLink";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { SearchFilters } from "./SearchFilters";
 
@@ -327,17 +327,18 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                             ) : null}
                           </td>
                           <td className="border-b border-slate-100 px-5 py-4 text-right">
-                            <Link
+                            <LoadingLink
                               href={
                                 isInvoice
                                   ? `/invoices/${document.id}`
                                   : `/documents/${document.id}`
                               }
+                              pendingLabel="Membuka..."
                               className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-600 transition hover:border-[#0A3A60]/30 hover:bg-slate-50 hover:text-[#0A3A60]"
                             >
                               Detail
                               <ArrowUpRight className="size-4" aria-hidden="true" />
-                            </Link>
+                            </LoadingLink>
                           </td>
                         </tr>
                       );

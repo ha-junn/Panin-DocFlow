@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
   ArrowLeft,
@@ -10,6 +9,8 @@ import {
   UserRound,
 } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
+import { LoadingLink } from "@/components/LoadingLink";
+import { PendingSubmitButton } from "@/components/PendingSubmitButton";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { updateDocumentAction } from "./actions";
 
@@ -152,13 +153,14 @@ export default async function EditDocumentPage({
     <AppLayout>
       <div className="space-y-6">
         <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-          <Link
+          <LoadingLink
             href={`/documents/${detail.id}`}
+            pendingLabel="Kembali..."
             className="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 transition hover:text-[#0A3A60]"
           >
             <ArrowLeft className="size-4" aria-hidden="true" />
             Kembali ke detail
-          </Link>
+          </LoadingLink>
 
           <div className="mt-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
@@ -424,18 +426,18 @@ export default async function EditDocumentPage({
               </div>
             ) : null}
 
-            <button
-              type="submit"
+            <PendingSubmitButton
               className={[
                 "inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg px-4 text-sm font-semibold text-white shadow-sm transition focus:outline-none focus:ring-4",
                 isInvoice
                   ? "bg-[#D71920] hover:bg-[#b9151b] focus:ring-[#D71920]/20"
                   : "bg-[#0A3A60] hover:bg-[#082f4f] focus:ring-[#0A3A60]/20",
               ].join(" ")}
+              pendingLabel="Menyimpan..."
             >
               <Save className="size-4" aria-hidden="true" />
               Simpan Perubahan
-            </button>
+            </PendingSubmitButton>
           </aside>
         </form>
       </div>

@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
   Building2,
@@ -11,6 +10,8 @@ import {
 } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
 import { ConfirmSubmitButton } from "@/components/ConfirmSubmitButton";
+import { LoadingLink } from "@/components/LoadingLink";
+import { PendingSubmitButton } from "@/components/PendingSubmitButton";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
   createDepartmentAction,
@@ -90,20 +91,21 @@ export default async function DepartmentsSettingsPage({
             </div>
 
             <div className="flex rounded-lg border border-slate-200 bg-slate-50 p-1">
-              <Link
+              <LoadingLink
                 href="/settings/departments"
                 className="inline-flex h-9 items-center gap-2 rounded-md bg-white px-3 text-sm font-semibold text-[#0A3A60] shadow-sm"
               >
                 <Building2 className="size-4" aria-hidden="true" />
                 Departemen
-              </Link>
-              <Link
+              </LoadingLink>
+              <LoadingLink
                 href="/settings/categories"
+                pendingLabel="Membuka..."
                 className="inline-flex h-9 items-center gap-2 rounded-md px-3 text-sm font-semibold text-slate-600 transition hover:bg-white hover:text-[#0A3A60]"
               >
                 <Layers3 className="size-4" aria-hidden="true" />
                 Kategori
-              </Link>
+              </LoadingLink>
             </div>
           </div>
         </section>
@@ -157,13 +159,13 @@ export default async function DepartmentsSettingsPage({
                 />
               </label>
 
-              <button
-                type="submit"
+              <PendingSubmitButton
                 className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-[#0A3A60] px-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#082f4f]"
+                pendingLabel="Menyimpan..."
               >
                 <Plus className="size-4" aria-hidden="true" />
                 Simpan Departemen
-              </button>
+              </PendingSubmitButton>
             </div>
           </form>
 
@@ -206,13 +208,13 @@ export default async function DepartmentsSettingsPage({
                       <div className="inline-flex h-10 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-600">
                         {usageMap[department.id] ?? 0} dokumen
                       </div>
-                      <button
-                        type="submit"
+                      <PendingSubmitButton
                         className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[#0A3A60] px-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#082f4f]"
+                        pendingLabel="Menyimpan..."
                       >
                         <Save className="size-4" aria-hidden="true" />
                         Simpan
-                      </button>
+                      </PendingSubmitButton>
                     </form>
 
                     <form action={deleteDepartmentAction} className="mt-3">
