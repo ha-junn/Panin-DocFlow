@@ -13,6 +13,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
+import { SuccessToast } from "@/components/SuccessToast";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 type Tone = "blue" | "red" | "teal" | "amber";
@@ -88,6 +89,12 @@ type RawDocument = {
     | { internal_pic: string | null }[]
     | null;
   creator: { full_name: string } | null;
+};
+
+type DashboardPageProps = {
+  searchParams: Promise<{
+    created?: string;
+  }>;
 };
 
 const emptySummary: DashboardSummary = {
@@ -201,6 +208,24 @@ function createMetrics(summary: DashboardSummary): Metric[] {
       tone: "amber",
     },
   ];
+}
+
+function getCreatedToast(created?: string) {
+  if (created === "invoice") {
+    return {
+      title: "Invoice berhasil tersimpan",
+      message: "Data invoice sudah masuk dan dashboard diperbarui.",
+    };
+  }
+
+  if (created === "letter") {
+    return {
+      title: "Dokumen berhasil tersimpan",
+      message: "Data dokumen sudah masuk dan dashboard diperbarui.",
+    };
+  }
+
+  return null;
 }
 
 function mapSummary(row?: RawSummary): DashboardSummary {
@@ -659,7 +684,9 @@ function DocumentsTable({ documents }: { documents: DocumentRow[] }) {
   );
 }
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: DashboardPageProps) {
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
@@ -669,11 +696,21 @@ export default async function DashboardPage() {
     redirect("/login");
   }
 
-  const dashboardData = await getDashboardData(supabase);
+  const [dashboardData, params] = await Promise.all([
+    getDashboardData(supabase),
+    searchParams,
+  ]);
   const metrics = createMetrics(dashboardData.summary);
+  const createdToast = getCreatedToast(params.created);
 
   return (
     <AppLayout>
+      {createdToast ? (
+        <SuccessToast
+          title={createdToast.title}
+          message={createdToast.message}
+        />
+      ) : null}
       <div className="space-y-6">
         <section className="relative overflow-hidden rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
           <div className="absolute inset-y-0 right-0 hidden w-1/3 bg-[linear-gradient(135deg,rgba(10,58,96,0.10),rgba(215,25,32,0.08)_45%,rgba(20,184,166,0.10))] lg:block" />

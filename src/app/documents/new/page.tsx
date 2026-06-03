@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { AppLayout } from "@/components/AppLayout";
+import { PendingSubmitButton } from "@/components/PendingSubmitButton";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createLetterAction } from "./actions";
 
@@ -298,13 +299,13 @@ export default async function NewDocumentPage({
               </p>
             </div>
 
-            <button
-              type="submit"
+            <PendingSubmitButton
               className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-[#0A3A60] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#082f4f] focus:outline-none focus:ring-4 focus:ring-[#0A3A60]/20"
+              pendingLabel="Menyimpan surat..."
             >
               <Save className="size-4" aria-hidden="true" />
               Simpan Surat
-            </button>
+            </PendingSubmitButton>
           </aside>
         </form>
       </div>

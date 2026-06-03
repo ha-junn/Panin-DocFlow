@@ -9,6 +9,7 @@ import {
   UserRound,
 } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
+import { PendingSubmitButton } from "@/components/PendingSubmitButton";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createInvoiceBatchAction } from "./actions";
 import { InvoiceRows } from "./InvoiceRows";
@@ -218,13 +219,13 @@ export default async function NewInvoicePage({
               </p>
             </div>
 
-            <button
-              type="submit"
+            <PendingSubmitButton
               className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-[#D71920] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#b9151b] focus:outline-none focus:ring-4 focus:ring-[#D71920]/20"
+              pendingLabel="Menyimpan invoice..."
             >
               <Save className="size-4" aria-hidden="true" />
               Simpan Invoice
-            </button>
+            </PendingSubmitButton>
           </aside>
         </form>
       </div>
