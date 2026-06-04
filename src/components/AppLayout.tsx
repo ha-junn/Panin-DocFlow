@@ -8,6 +8,7 @@ import type { ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
   Bell,
+  CheckCircle2,
   ChevronDown,
   ClipboardList,
   FileArchive,
@@ -78,8 +79,8 @@ const navigationItems: NavigationItem[] = [
 const branchProfile = {
   code: "HRM-GA",
   name: "Pusat",
-  operator: "Ha Junn",
-  role: "Admin Operasional",
+  operator: "HARJUN",
+  role: "Admin",
 };
 
 const runningNotice =
@@ -193,6 +194,12 @@ function SignOutButton() {
 }
 
 function TopNavbar({ onMenuClick }: { onMenuClick: () => void }) {
+  const pathname = usePathname();
+  const [isNotificationOpen, setNotificationOpen] = useState(false);
+  const [createdKind, setCreatedKind] = useState<"letter" | "invoice" | null>(
+    null,
+  );
+  const [hasUnreadNotification, setUnreadNotification] = useState(false);
   const currentDate = useMemo(
     () =>
       new Intl.DateTimeFormat("id-ID", {
@@ -203,6 +210,42 @@ function TopNavbar({ onMenuClick }: { onMenuClick: () => void }) {
       }).format(new Date()),
     [],
   );
+  const notification = createdKind
+    ? {
+        title:
+          createdKind === "invoice"
+            ? "Invoice berhasil tersimpan"
+            : "Dokumen berhasil tersimpan",
+        message:
+          createdKind === "invoice"
+            ? "Invoice baru sudah masuk ke dashboard dan daftar invoice."
+            : "Dokumen baru sudah masuk ke dashboard dan daftar dokumen.",
+      }
+    : {
+        title: "Belum ada notifikasi baru",
+        message:
+          "Notifikasi akan muncul setelah dokumen atau invoice berhasil disimpan.",
+      };
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const created = params.get("created");
+
+    if (created === "letter" || created === "invoice") {
+      setCreatedKind(created);
+      setUnreadNotification(true);
+      setNotificationOpen(true);
+
+      const timeout = window.setTimeout(() => {
+        setNotificationOpen(false);
+      }, 5000);
+
+      return () => window.clearTimeout(timeout);
+    }
+
+    setCreatedKind(null);
+    return undefined;
+  }, [pathname]);
 
   return (
     <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
@@ -244,15 +287,41 @@ function TopNavbar({ onMenuClick }: { onMenuClick: () => void }) {
           </span>
         </div>
 
-        <button
-          type="button"
-          className="relative inline-flex size-10 items-center justify-center rounded-lg border border-slate-200 text-slate-600 transition hover:border-[#0A3A60]/30 hover:bg-slate-50 hover:text-[#0A3A60]"
-          aria-label="Lihat notifikasi"
-          title="Notifikasi"
-        >
-          <Bell className="size-5" aria-hidden="true" />
-          <span className="absolute right-2 top-2 size-2 rounded-full bg-[#EF4444] ring-2 ring-white" />
-        </button>
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => {
+              setNotificationOpen((current) => !current);
+              setUnreadNotification(false);
+            }}
+            className="relative inline-flex size-10 items-center justify-center rounded-lg border border-slate-200 text-slate-600 transition hover:border-[#0A3A60]/30 hover:bg-slate-50 hover:text-[#0A3A60]"
+            aria-label="Lihat notifikasi"
+            title="Notifikasi"
+          >
+            <Bell className="size-5" aria-hidden="true" />
+            {hasUnreadNotification ? (
+              <span className="absolute right-2 top-2 size-2 rounded-full bg-[#EF4444] ring-2 ring-white" />
+            ) : null}
+          </button>
+
+          {isNotificationOpen ? (
+            <div className="absolute right-0 top-12 z-50 w-80 rounded-lg border border-slate-200 bg-white p-4 text-sm shadow-xl">
+              <div className="flex items-start gap-3">
+                <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700">
+                  <CheckCircle2 className="size-5" aria-hidden="true" />
+                </div>
+                <div>
+                  <p className="font-semibold text-slate-950">
+                    {notification.title}
+                  </p>
+                  <p className="mt-1 leading-5 text-slate-500">
+                    {notification.message}
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : null}
+        </div>
 
         <button
           type="button"
@@ -262,7 +331,7 @@ function TopNavbar({ onMenuClick }: { onMenuClick: () => void }) {
         >
           <Image
             src="/ha-junn-profile-close.png"
-            alt="Foto profil Ha Junn"
+            alt="Foto profil HARJUN"
             width={32}
             height={32}
             className="size-8 rounded-md object-cover object-[50%_24%]"

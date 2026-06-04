@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
 import { LoadingLink } from "@/components/LoadingLink";
+import { PaginationControls } from "@/components/PaginationControls";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { SearchFilters } from "./SearchFilters";
 
@@ -16,6 +17,7 @@ type SearchPageProps = {
     q?: string;
     type?: string;
     category?: string;
+    page?: string;
   }>;
 };
 
@@ -62,6 +64,46 @@ const currencyFormatter = new Intl.NumberFormat("id-ID", {
   currency: "IDR",
   maximumFractionDigits: 0,
 });
+
+const PAGE_SIZE = 20;
+
+function parsePage(value: string | undefined) {
+  const page = Number(value);
+  return Number.isInteger(page) && page > 0 ? page : 1;
+}
+
+function getSearchPageHref({
+  page,
+  keyword,
+  type,
+  category,
+}: {
+  page: number;
+  keyword: string;
+  type: string;
+  category: string;
+}) {
+  const params = new URLSearchParams();
+
+  if (keyword) {
+    params.set("q", keyword);
+  }
+
+  if (type) {
+    params.set("type", type);
+  }
+
+  if (category) {
+    params.set("category", category);
+  }
+
+  if (page > 1) {
+    params.set("page", String(page));
+  }
+
+  const query = params.toString();
+  return query ? `/search?${query}` : "/search";
+}
 
 function formatDate(value: string) {
   return dateFormatter.format(new Date(value));
@@ -135,6 +177,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   const keyword = String(params.q ?? "").trim();
   const type = validTypes.has(String(params.type)) ? String(params.type) : "";
   const category = String(params.category ?? "").trim();
+  const currentPage = parsePage(params.page);
 
   let documentsQuery = supabase
     .from("documents")
@@ -177,6 +220,28 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   const rows = ((documents ?? []) as unknown as SearchDocument[]).filter(
     (document) => matchesKeyword(document, keyword),
   );
+  const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const pageStart = (safeCurrentPage - 1) * PAGE_SIZE;
+  const paginatedRows = rows.slice(pageStart, pageStart + PAGE_SIZE);
+  const previousHref =
+    safeCurrentPage > 1
+      ? getSearchPageHref({
+          page: safeCurrentPage - 1,
+          keyword,
+          type,
+          category,
+        })
+      : null;
+  const nextHref =
+    safeCurrentPage < totalPages
+      ? getSearchPageHref({
+          page: safeCurrentPage + 1,
+          keyword,
+          type,
+          category,
+        })
+      : null;
   const categoryOptions = (categories ?? []) as Category[];
   const letterCount = rows.filter((row) => row.type === "LETTER").length;
   const invoiceCount = rows.filter((row) => row.type === "INVOICE").length;
@@ -272,8 +337,8 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                   </tr>
                 </thead>
                 <tbody>
-                  {rows.length > 0 ? (
-                    rows.map((document) => {
+                  {paginatedRows.length > 0 ? (
+                    paginatedRows.map((document) => {
                       const isInvoice = document.type === "INVOICE";
                       const amount = getAmount(document);
 
@@ -370,6 +435,14 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
               </table>
             </div>
           )}
+
+          <PaginationControls
+            currentPage={safeCurrentPage}
+            pageSize={PAGE_SIZE}
+            totalItems={rows.length}
+            previousHref={previousHref}
+            nextHref={nextHref}
+          />
         </section>
 
         <div className="grid gap-4 lg:grid-cols-2">

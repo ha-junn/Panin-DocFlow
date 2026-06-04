@@ -68,6 +68,12 @@ export default async function NewInvoicePage({
   const categoryOptions = ((categories ?? []) as Category[]).filter(
     (category) => !category.name.toUpperCase().includes("BPKU"),
   );
+  const defaultDepartmentId =
+    departmentOptions.find((department) => department.code === "GA")?.id ?? "";
+  const defaultCategoryId =
+    categoryOptions.find(
+      (category) => category.name.trim().toLowerCase() === "vendor",
+    )?.id ?? "";
 
   return (
     <AppLayout>
@@ -153,6 +159,7 @@ export default async function NewInvoicePage({
                 <select
                   name="department_id"
                   required
+                  defaultValue={defaultDepartmentId}
                   className="mt-1.5 h-11 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm text-slate-900 outline-none transition focus:border-[#0A3A60] focus:bg-white focus:ring-4 focus:ring-[#0A3A60]/10"
                 >
                   <option value="">Pilih departemen</option>
@@ -171,6 +178,7 @@ export default async function NewInvoicePage({
                 <select
                   name="category_id"
                   required
+                  defaultValue={defaultCategoryId}
                   className="mt-1.5 h-11 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm text-slate-900 outline-none transition focus:border-[#0A3A60] focus:bg-white focus:ring-4 focus:ring-[#0A3A60]/10"
                 >
                   <option value="">Pilih kategori invoice</option>

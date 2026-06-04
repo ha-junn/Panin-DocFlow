@@ -10,12 +10,14 @@ import {
 import { AppLayout } from "@/components/AppLayout";
 import { ConfirmSubmitButton } from "@/components/ConfirmSubmitButton";
 import { LoadingLink } from "@/components/LoadingLink";
+import { PaginationControls } from "@/components/PaginationControls";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { deleteDocumentAction } from "./actions";
 
 type DocumentsPageProps = {
   searchParams: Promise<{
     message?: string;
+    page?: string;
   }>;
 };
 
@@ -36,6 +38,17 @@ const dateFormatter = new Intl.DateTimeFormat("id-ID", {
   year: "numeric",
 });
 
+const PAGE_SIZE = 20;
+
+function parsePage(value: string | undefined) {
+  const page = Number(value);
+  return Number.isInteger(page) && page > 0 ? page : 1;
+}
+
+function getPageHref(page: number) {
+  return page > 1 ? `/documents?page=${page}` : "/documents";
+}
+
 function formatDate(value: string) {
   return dateFormatter.format(new Date(value));
 }
@@ -52,12 +65,15 @@ export default async function DocumentsPage({
     redirect("/login");
   }
 
-  const [{ message }, { data: documents, error }] = await Promise.all([
-    searchParams,
-    supabase
-      .from("documents")
-      .select(
-        `
+  const { message, page: pageParam } = await searchParams;
+  const currentPage = parsePage(pageParam);
+  const from = (currentPage - 1) * PAGE_SIZE;
+  const to = from + PAGE_SIZE - 1;
+
+  const { data: documents, error, count } = await supabase
+    .from("documents")
+    .select(
+      `
         id,
         agenda_number,
         received_at,
@@ -67,13 +83,24 @@ export default async function DocumentsPage({
         department:departments(name, code),
         category:document_categories(name)
       `,
-      )
-      .eq("type", "LETTER")
-      .order("created_at", { ascending: false })
-      .limit(100),
-  ]);
+      { count: "exact" },
+    )
+    .eq("type", "LETTER")
+    .order("created_at", { ascending: false })
+    .range(from, to);
 
+  const totalDocuments = count ?? 0;
+  const totalPages = Math.max(1, Math.ceil(totalDocuments / PAGE_SIZE));
+  if (totalDocuments > 0 && currentPage > totalPages) {
+    redirect(getPageHref(totalPages));
+  }
+
+  const safeCurrentPage = Math.min(currentPage, totalPages);
   const rows = (documents ?? []) as unknown as RawDocument[];
+  const previousHref =
+    safeCurrentPage > 1 ? getPageHref(safeCurrentPage - 1) : null;
+  const nextHref =
+    safeCurrentPage < totalPages ? getPageHref(safeCurrentPage + 1) : null;
 
   return (
     <AppLayout>
@@ -119,7 +146,7 @@ export default async function DocumentsPage({
               Dokumen
             </p>
             <p className="mt-2 text-2xl font-semibold text-[#0A3A60]">
-              {rows.length}
+              {totalDocuments}
             </p>
           </div>
         </section>
@@ -282,6 +309,14 @@ export default async function DocumentsPage({
               </table>
             </div>
           )}
+
+          <PaginationControls
+            currentPage={safeCurrentPage}
+            pageSize={PAGE_SIZE}
+            totalItems={totalDocuments}
+            previousHref={previousHref}
+            nextHref={nextHref}
+          />
         </section>
       </div>
     </AppLayout>

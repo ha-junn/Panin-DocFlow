@@ -11,14 +11,6 @@ const timeFormatter = new Intl.DateTimeFormat("id-ID", {
   timeZone: "Asia/Jakarta",
 });
 
-const dateFormatter = new Intl.DateTimeFormat("id-ID", {
-  weekday: "long",
-  day: "2-digit",
-  month: "long",
-  year: "numeric",
-  timeZone: "Asia/Jakarta",
-});
-
 export function DigitalClock() {
   const [now, setNow] = useState(() => new Date());
 
@@ -28,13 +20,7 @@ export function DigitalClock() {
     return () => window.clearInterval(interval);
   }, []);
 
-  const display = useMemo(
-    () => ({
-      time: timeFormatter.format(now),
-      date: dateFormatter.format(now),
-    }),
-    [now],
-  );
+  const display = useMemo(() => timeFormatter.format(now), [now]);
 
   return (
     <div className="relative overflow-hidden rounded-lg border border-[#0A3A60]/10 bg-white/85 p-4 shadow-sm backdrop-blur">
@@ -48,13 +34,13 @@ export function DigitalClock() {
             className="font-mono text-2xl font-semibold tracking-wide text-slate-950"
             suppressHydrationWarning
           >
-            {display.time}
+            {display}
           </p>
           <p
             className="mt-1 text-xs font-medium text-slate-500"
             suppressHydrationWarning
           >
-            {display.date} WIB
+            WIB
           </p>
         </div>
       </div>

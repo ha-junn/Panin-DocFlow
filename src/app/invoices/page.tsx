@@ -11,12 +11,14 @@ import {
 import { AppLayout } from "@/components/AppLayout";
 import { ConfirmSubmitButton } from "@/components/ConfirmSubmitButton";
 import { LoadingLink } from "@/components/LoadingLink";
+import { PaginationControls } from "@/components/PaginationControls";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { deleteDocumentAction } from "../documents/actions";
 
 type InvoicesPageProps = {
   searchParams: Promise<{
     message?: string;
+    page?: string;
   }>;
 };
 
@@ -50,6 +52,17 @@ const currencyFormatter = new Intl.NumberFormat("id-ID", {
   maximumFractionDigits: 0,
 });
 
+const PAGE_SIZE = 20;
+
+function parsePage(value: string | undefined) {
+  const page = Number(value);
+  return Number.isInteger(page) && page > 0 ? page : 1;
+}
+
+function getPageHref(page: number) {
+  return page > 1 ? `/invoices?page=${page}` : "/invoices";
+}
+
 function formatDate(value: string) {
   return dateFormatter.format(new Date(value));
 }
@@ -76,12 +89,15 @@ export default async function InvoicesPage({ searchParams }: InvoicesPageProps) 
     redirect("/login");
   }
 
-  const [{ message }, { data: invoices, error }] = await Promise.all([
-    searchParams,
-    supabase
-      .from("documents")
-      .select(
-        `
+  const { message, page: pageParam } = await searchParams;
+  const currentPage = parsePage(pageParam);
+  const from = (currentPage - 1) * PAGE_SIZE;
+  const to = from + PAGE_SIZE - 1;
+
+  const { data: invoices, error, count } = await supabase
+    .from("documents")
+    .select(
+      `
         id,
         agenda_number,
         received_at,
@@ -93,13 +109,24 @@ export default async function InvoicesPage({ searchParams }: InvoicesPageProps) 
         invoice_details(invoice_number, amount, internal_pic),
         creator:profiles!documents_created_by_fkey(full_name)
       `,
-      )
-      .eq("type", "INVOICE")
-      .order("created_at", { ascending: false })
-      .limit(100),
-  ]);
+      { count: "exact" },
+    )
+    .eq("type", "INVOICE")
+    .order("created_at", { ascending: false })
+    .range(from, to);
 
+  const totalInvoices = count ?? 0;
+  const totalPages = Math.max(1, Math.ceil(totalInvoices / PAGE_SIZE));
+  if (totalInvoices > 0 && currentPage > totalPages) {
+    redirect(getPageHref(totalPages));
+  }
+
+  const safeCurrentPage = Math.min(currentPage, totalPages);
   const rows = (invoices ?? []) as unknown as RawInvoiceDocument[];
+  const previousHref =
+    safeCurrentPage > 1 ? getPageHref(safeCurrentPage - 1) : null;
+  const nextHref =
+    safeCurrentPage < totalPages ? getPageHref(safeCurrentPage + 1) : null;
   const vendorCount = new Set(rows.map((invoice) => invoice.sender_name)).size;
 
   return (
@@ -138,7 +165,7 @@ export default async function InvoicesPage({ searchParams }: InvoicesPageProps) 
               Invoice tampil
             </p>
             <p className="mt-2 text-2xl font-semibold text-slate-950">
-              {rows.length}
+              {totalInvoices}
             </p>
           </div>
           <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
@@ -310,6 +337,14 @@ export default async function InvoicesPage({ searchParams }: InvoicesPageProps) 
               </table>
             </div>
           )}
+
+          <PaginationControls
+            currentPage={safeCurrentPage}
+            pageSize={PAGE_SIZE}
+            totalItems={totalInvoices}
+            previousHref={previousHref}
+            nextHref={nextHref}
+          />
         </section>
 
         <div className="rounded-lg border border-slate-200 bg-white p-4 text-sm text-slate-600 shadow-sm">
