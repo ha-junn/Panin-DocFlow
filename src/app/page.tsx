@@ -9,6 +9,7 @@ import {
   MailPlus,
   MoreHorizontal,
   Plus,
+  Send,
   Sparkles,
 } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
@@ -713,6 +714,14 @@ export default async function DashboardPage() {
                 >
                   <Plus className="size-4" aria-hidden="true" />
                   Tambah Invoice
+                </LoadingLink>
+                <LoadingLink
+                  href="/outgoing/new"
+                  pendingLabel="Membuka..."
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-[#0A3A60]/20 bg-white px-4 text-sm font-semibold text-[#0A3A60] shadow-sm transition hover:bg-[#0A3A60]/5"
+                >
+                  <Send className="size-4" aria-hidden="true" />
+                  Tambah Surat Keluar
                 </LoadingLink>
               </div>
             </div>
