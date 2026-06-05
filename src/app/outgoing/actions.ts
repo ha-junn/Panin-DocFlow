@@ -203,8 +203,12 @@ export async function createOutgoingLettersAction(formData: FormData) {
 
   if (error) {
     console.error("Failed to create outgoing letters", error);
+    const message = encodeURIComponent(
+      `Surat keluar gagal disimpan. Detail: ${error.message}`,
+    );
+
     redirect(
-      "/outgoing/new?message=Surat keluar gagal disimpan. Pastikan SQL Surat Keluar sudah dijalankan di Supabase.",
+      `/outgoing/new?message=${message}`,
     );
   }
 

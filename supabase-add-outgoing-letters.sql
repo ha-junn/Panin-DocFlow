@@ -35,6 +35,18 @@ on public.outgoing_letters (sender_staff);
 create index if not exists outgoing_letters_destination_name_idx
 on public.outgoing_letters (destination_name);
 
+create table if not exists public.outgoing_agenda_counters (
+  id uuid primary key default gen_random_uuid(),
+  year integer not null,
+  month integer not null,
+  last_number integer not null default 0,
+  updated_at timestamptz not null default now(),
+  constraint outgoing_agenda_counters_unique_period unique (year, month),
+  constraint outgoing_agenda_counters_month_check check (month between 1 and 12),
+  constraint outgoing_agenda_counters_year_check check (year between 2000 and 2100),
+  constraint outgoing_agenda_counters_last_number_check check (last_number >= 0)
+);
+
 create or replace function public.next_outgoing_agenda_number(sent_date timestamptz)
 returns text
 language plpgsql
@@ -46,10 +58,10 @@ declare
   agenda_month int := extract(month from sent_date at time zone 'Asia/Jakarta')::int;
   next_number int;
 begin
-  insert into public.agenda_counters(type, year, month, last_number)
-  values ('OUTGOING', agenda_year, agenda_month, 1)
-  on conflict (type, year, month) do update
-    set last_number = public.agenda_counters.last_number + 1,
+  insert into public.outgoing_agenda_counters(year, month, last_number)
+  values (agenda_year, agenda_month, 1)
+  on conflict (year, month) do update
+    set last_number = public.outgoing_agenda_counters.last_number + 1,
         updated_at = now()
   returning last_number into next_number;
 
@@ -87,6 +99,14 @@ before update on public.outgoing_letters
 for each row execute function public.set_updated_at();
 
 alter table public.outgoing_letters enable row level security;
+alter table public.outgoing_agenda_counters enable row level security;
+
+drop policy if exists "Authenticated users can read outgoing agenda counters" on public.outgoing_agenda_counters;
+create policy "Authenticated users can read outgoing agenda counters"
+on public.outgoing_agenda_counters
+for select
+to authenticated
+using (true);
 
 drop policy if exists "Authenticated users can read outgoing letters" on public.outgoing_letters;
 create policy "Authenticated users can read outgoing letters"
