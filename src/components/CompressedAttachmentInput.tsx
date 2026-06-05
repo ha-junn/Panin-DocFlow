@@ -3,7 +3,7 @@
 import type { ChangeEvent } from "react";
 import { useRef, useState } from "react";
 
-type AttachmentKind = "DOC" | "INV";
+type AttachmentKind = "DOC" | "INV" | "SK";
 type Tone = "blue" | "red";
 
 type CompressedAttachmentInputProps = {

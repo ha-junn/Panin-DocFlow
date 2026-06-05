@@ -10,6 +10,7 @@ Aplikasi ini memakai Next.js App Router, TypeScript, Tailwind CSS, Supabase Auth
 - Dashboard operasional dengan metric cards, tren mingguan, distribusi departemen, dan dokumen terbaru dari data real Supabase.
 - Tambah dokumen masuk.
 - Tambah invoice masuk.
+- Tambah surat keluar batch untuk beberapa amplop sekaligus.
 - Upload lampiran PDF, JPG, dan PNG.
 - Detail dan edit dokumen.
 - Detail invoice khusus di halaman invoice.
@@ -28,6 +29,9 @@ src/app/documents/[id]/edit/page.tsx  Edit dokumen
 src/app/invoices/page.tsx             Daftar invoice
 src/app/invoices/new/page.tsx         Tambah invoice
 src/app/invoices/[id]/page.tsx        Detail invoice
+src/app/outgoing/page.tsx             Daftar surat keluar
+src/app/outgoing/new/page.tsx         Tambah surat keluar batch
+src/app/outgoing/[id]/page.tsx        Detail surat keluar
 src/app/search/page.tsx               Pencarian
 src/app/reports/page.tsx              Laporan dan backup bulanan
 src/app/backups/page.tsx              Redirect ke Laporan
@@ -36,6 +40,7 @@ src/app/settings/departments/page.tsx Pengaturan departemen
 src/app/settings/categories/page.tsx  Pengaturan kategori
 src/components/AppLayout.tsx          Layout utama aplikasi
 supabase-schema.sql                   Schema utama Supabase
+supabase-add-outgoing-letters.sql     Schema tambahan Surat Keluar
 ```
 
 ## Ringkasan Halaman
@@ -44,6 +49,7 @@ supabase-schema.sql                   Schema utama Supabase
 - **Pencarian**: pencarian cepat berdasarkan keyword, jenis, dan kategori.
 - **Dokumen**: daftar dan input dokumen masuk.
 - **Invoice Masuk**: daftar dan input invoice masuk.
+- **Surat Keluar**: daftar dan input surat keluar secara batch.
 - **Laporan**: rekap fleksibel, export laporan, dan backup bulanan.
 - **Pengaturan**: kelola departemen dan kategori.
 
@@ -135,6 +141,7 @@ supabase-update-letter-categories.sql
 supabase-make-invoice-fields-optional.sql
 supabase-single-operator-admin.sql
 supabase-remove-archive-feature.sql
+supabase-add-outgoing-letters.sql
 ```
 
 Untuk optimasi query daftar dokumen/invoice, pastikan index berikut sudah ada di database live:
@@ -184,7 +191,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-or-publishable-key
 ```
 
 5. Deploy.
-6. Test login, tambah dokumen, tambah invoice, upload lampiran, pencarian, laporan, dan backup.
+6. Test login, tambah dokumen, tambah invoice, tambah surat keluar, upload lampiran, pencarian, laporan, dan backup.
 
 ## Checklist Sebelum Deploy
 
@@ -194,7 +201,9 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-or-publishable-key
 - Dashboard menampilkan metric cards, tren, distribusi departemen, dan dokumen terbaru.
 - Tambah dokumen berhasil.
 - Tambah invoice berhasil.
+- Tambah surat keluar batch berhasil.
 - Detail invoice membuka halaman `/invoices/[id]`.
+- Detail surat keluar membuka halaman `/outgoing/[id]`.
 - Upload lampiran berhasil.
 - Pencarian menampilkan dokumen dan invoice berdasarkan keyword, jenis, dan kategori.
 - Laporan bisa difilter.

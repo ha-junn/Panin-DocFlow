@@ -16,6 +16,7 @@ import {
   LayoutDashboard,
   Menu,
   Search,
+  Send,
   Settings,
   LogOut,
   Loader2,
@@ -35,6 +36,7 @@ type NavigationItem = {
 type SidebarCounts = {
   documents: number | null;
   invoices: number | null;
+  outgoing: number | null;
 };
 
 const navigationItems: NavigationItem[] = [
@@ -61,6 +63,12 @@ const navigationItems: NavigationItem[] = [
     href: "/invoices",
     icon: ClipboardList,
     badgeKey: "invoices",
+  },
+  {
+    label: "Surat Keluar",
+    href: "/outgoing",
+    icon: Send,
+    badgeKey: "outgoing",
   },
   {
     label: "Laporan",
@@ -196,9 +204,9 @@ function SignOutButton() {
 function TopNavbar({ onMenuClick }: { onMenuClick: () => void }) {
   const pathname = usePathname();
   const [isNotificationOpen, setNotificationOpen] = useState(false);
-  const [createdKind, setCreatedKind] = useState<"letter" | "invoice" | null>(
-    null,
-  );
+  const [createdKind, setCreatedKind] = useState<
+    "letter" | "invoice" | "outgoing" | null
+  >(null);
   const [hasUnreadNotification, setUnreadNotification] = useState(false);
   const currentDate = useMemo(
     () =>
@@ -215,23 +223,31 @@ function TopNavbar({ onMenuClick }: { onMenuClick: () => void }) {
         title:
           createdKind === "invoice"
             ? "Invoice berhasil tersimpan"
-            : "Dokumen berhasil tersimpan",
+            : createdKind === "outgoing"
+              ? "Surat keluar berhasil tersimpan"
+              : "Dokumen berhasil tersimpan",
         message:
           createdKind === "invoice"
             ? "Invoice baru sudah masuk ke dashboard dan daftar invoice."
-            : "Dokumen baru sudah masuk ke dashboard dan daftar dokumen.",
+            : createdKind === "outgoing"
+              ? "Surat keluar baru sudah masuk ke daftar surat keluar."
+              : "Dokumen baru sudah masuk ke dashboard dan daftar dokumen.",
       }
     : {
         title: "Belum ada notifikasi baru",
         message:
-          "Notifikasi akan muncul setelah dokumen atau invoice berhasil disimpan.",
+          "Notifikasi akan muncul setelah dokumen, invoice, atau surat keluar berhasil disimpan.",
       };
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const created = params.get("created");
 
-    if (created === "letter" || created === "invoice") {
+    if (
+      created === "letter" ||
+      created === "invoice" ||
+      created === "outgoing"
+    ) {
       setCreatedKind(created);
       setUnreadNotification(true);
       setNotificationOpen(true);
@@ -360,6 +376,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
   const [sidebarCounts, setSidebarCounts] = useState<SidebarCounts>({
     documents: null,
     invoices: null,
+    outgoing: null,
   });
 
   useEffect(() => {
@@ -367,7 +384,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
     let isMounted = true;
 
     async function loadSidebarCounts() {
-      const [documentsResult, invoicesResult] = await Promise.all([
+      const [documentsResult, invoicesResult, outgoingResult] = await Promise.all([
         supabase
           .from("documents")
           .select("id", { count: "exact", head: true })
@@ -376,6 +393,9 @@ export function AppLayout({ children }: { children: ReactNode }) {
           .from("documents")
           .select("id", { count: "exact", head: true })
           .eq("type", "INVOICE"),
+        supabase
+          .from("outgoing_letters")
+          .select("id", { count: "exact", head: true }),
       ]);
 
       if (!isMounted) {
@@ -385,6 +405,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
       setSidebarCounts({
         documents: documentsResult.count ?? 0,
         invoices: invoicesResult.count ?? 0,
+        outgoing: outgoingResult.count ?? 0,
       });
     }
 
@@ -395,6 +416,13 @@ export function AppLayout({ children }: { children: ReactNode }) {
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "documents" },
+        () => {
+          void loadSidebarCounts();
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "outgoing_letters" },
         () => {
           void loadSidebarCounts();
         },
