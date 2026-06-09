@@ -9,6 +9,13 @@ import {
 import { AppLayout } from "@/components/AppLayout";
 import { LoadingLink } from "@/components/LoadingLink";
 import { PaginationControls } from "@/components/PaginationControls";
+import { ReceiptStatusBadge } from "@/components/ReceiptStatusBadge";
+import {
+  fetchDocumentReceiptStatusMap,
+  matchesReceiptFilter,
+  validReceiptFilters,
+  type ReceiptFilter,
+} from "@/lib/receipts";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { SearchFilters } from "./SearchFilters";
 
@@ -17,6 +24,7 @@ type SearchPageProps = {
     q?: string;
     type?: string;
     category?: string;
+    receipt?: string;
     page?: string;
   }>;
 };
@@ -77,11 +85,13 @@ function getSearchPageHref({
   keyword,
   type,
   category,
+  receipt,
 }: {
   page: number;
   keyword: string;
   type: string;
   category: string;
+  receipt: ReceiptFilter;
 }) {
   const params = new URLSearchParams();
 
@@ -95,6 +105,10 @@ function getSearchPageHref({
 
   if (category) {
     params.set("category", category);
+  }
+
+  if (receipt) {
+    params.set("receipt", receipt);
   }
 
   if (page > 1) {
@@ -177,6 +191,9 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   const keyword = String(params.q ?? "").trim();
   const type = validTypes.has(String(params.type)) ? String(params.type) : "";
   const category = String(params.category ?? "").trim();
+  const receipt = validReceiptFilters.has(String(params.receipt))
+    ? (String(params.receipt) as ReceiptFilter)
+    : "";
   const currentPage = parsePage(params.page);
 
   let documentsQuery = supabase
@@ -217,8 +234,15 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
       .order("name", { ascending: true }),
   ]);
 
-  const rows = ((documents ?? []) as unknown as SearchDocument[]).filter(
-    (document) => matchesKeyword(document, keyword),
+  const candidateRows = (documents ?? []) as unknown as SearchDocument[];
+  const receiptStatusMap = await fetchDocumentReceiptStatusMap(
+    supabase,
+    candidateRows.map((document) => document.id),
+  );
+  const rows = candidateRows.filter(
+    (document) =>
+      matchesKeyword(document, keyword) &&
+      matchesReceiptFilter(receiptStatusMap.get(document.id), receipt),
   );
   const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
   const safeCurrentPage = Math.min(currentPage, totalPages);
@@ -231,6 +255,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
           keyword,
           type,
           category,
+          receipt,
         })
       : null;
   const nextHref =
@@ -240,13 +265,14 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
           keyword,
           type,
           category,
+          receipt,
         })
       : null;
   const categoryOptions = (categories ?? []) as Category[];
   const letterCount = rows.filter((row) => row.type === "LETTER").length;
   const invoiceCount = rows.filter((row) => row.type === "INVOICE").length;
   const totalAmount = rows.reduce((sum, row) => sum + getAmount(row), 0);
-  const hasActiveFilter = Boolean(keyword || type || category);
+  const hasActiveFilter = Boolean(keyword || type || category || receipt);
 
   return (
     <AppLayout>
@@ -281,15 +307,24 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                 <p className="text-lg font-semibold text-[#D71920]">{invoiceCount}</p>
               </div>
             </div>
+            <LoadingLink
+              href="/receipts/export"
+              pendingLabel="Menyiapkan..."
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-[#0A3A60]/30 hover:bg-slate-50 hover:text-[#0A3A60]"
+            >
+              <ReceiptText className="size-4" aria-hidden="true" />
+              Export Tanda Terima
+            </LoadingLink>
           </div>
         </section>
 
         <section className="rounded-lg border border-slate-200 bg-white shadow-sm">
           <SearchFilters
-            key={`${keyword}-${type}-${category}`}
+            key={`${keyword}-${type}-${category}-${receipt}`}
             keyword={keyword}
             type={type}
             category={category}
+            receipt={receipt}
             categories={categoryOptions}
           />
 
@@ -304,7 +339,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[1180px] border-separate border-spacing-0 text-left">
+              <table className="w-full min-w-[1320px] border-separate border-spacing-0 text-left">
                 <thead>
                   <tr className="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500">
                     <th className="border-b border-slate-200 px-5 py-3">
@@ -330,6 +365,9 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                     </th>
                     <th className="border-b border-slate-200 px-5 py-3">
                       Perihal / Invoice
+                    </th>
+                    <th className="border-b border-slate-200 px-5 py-3">
+                      Tanda Terima
                     </th>
                     <th className="border-b border-slate-200 px-5 py-3 text-right">
                       Aksi
@@ -391,6 +429,11 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                               </span>
                             ) : null}
                           </td>
+                          <td className="border-b border-slate-100 px-5 py-4">
+                            <ReceiptStatusBadge
+                              receipt={receiptStatusMap.get(document.id)}
+                            />
+                          </td>
                           <td className="border-b border-slate-100 px-5 py-4 text-right">
                             <LoadingLink
                               href={
@@ -410,7 +453,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                     })
                   ) : (
                     <tr>
-                      <td colSpan={9} className="px-5 py-14 text-center">
+                      <td colSpan={10} className="px-5 py-14 text-center">
                         <div className="mx-auto flex size-12 items-center justify-center rounded-lg bg-slate-100 text-slate-500">
                           {hasActiveFilter ? (
                             <FileSearch className="size-6" aria-hidden="true" />

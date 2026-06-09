@@ -11,6 +11,8 @@ import { AppLayout } from "@/components/AppLayout";
 import { ConfirmSubmitButton } from "@/components/ConfirmSubmitButton";
 import { LoadingLink } from "@/components/LoadingLink";
 import { PaginationControls } from "@/components/PaginationControls";
+import { ReceiptStatusBadge } from "@/components/ReceiptStatusBadge";
+import { fetchDocumentReceiptStatusMap } from "@/lib/receipts";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { deleteDocumentAction } from "./actions";
 
@@ -97,6 +99,10 @@ export default async function DocumentsPage({
 
   const safeCurrentPage = Math.min(currentPage, totalPages);
   const rows = (documents ?? []) as unknown as RawDocument[];
+  const receiptStatusMap = await fetchDocumentReceiptStatusMap(
+    supabase,
+    rows.map((document) => document.id),
+  );
   const previousHref =
     safeCurrentPage > 1 ? getPageHref(safeCurrentPage - 1) : null;
   const nextHref =
@@ -214,6 +220,9 @@ export default async function DocumentsPage({
                     <th className="border-b border-slate-200 px-5 py-3">
                       Perihal
                     </th>
+                    <th className="border-b border-slate-200 px-5 py-3">
+                      Tanda Terima
+                    </th>
                     <th className="border-b border-slate-200 px-5 py-3 text-right">
                       Aksi
                     </th>
@@ -250,6 +259,11 @@ export default async function DocumentsPage({
                             <span className="line-clamp-2">
                               {document.subject}
                             </span>
+                          </td>
+                          <td className="border-b border-slate-100 px-5 py-4">
+                            <ReceiptStatusBadge
+                              receipt={receiptStatusMap.get(document.id)}
+                            />
                           </td>
                           <td className="border-b border-slate-100 px-5 py-4">
                             <div className="flex justify-end gap-2">
@@ -292,7 +306,7 @@ export default async function DocumentsPage({
                       ))
                   ) : (
                     <tr>
-                      <td colSpan={8} className="px-5 py-14 text-center">
+                      <td colSpan={9} className="px-5 py-14 text-center">
                         <div className="mx-auto flex size-12 items-center justify-center rounded-lg bg-slate-100 text-slate-500">
                           <FileText className="size-6" aria-hidden="true" />
                         </div>

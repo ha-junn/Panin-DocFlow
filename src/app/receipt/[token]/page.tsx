@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { confirmReceiptAction } from "@/app/receipts/actions";
 import { PendingSubmitButton } from "@/components/PendingSubmitButton";
+import { PrintButton } from "@/components/PrintButton";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { SignaturePad } from "./SignaturePad";
 
@@ -196,9 +197,14 @@ export default async function ReceiptPage({
 
         {isConfirmed ? (
           <div className="rounded-lg border border-emerald-200 bg-white p-5 shadow-sm">
-            <div className="flex items-center gap-2 text-emerald-700">
-              <FileCheck2 className="size-5" aria-hidden="true" />
-              <h2 className="text-sm font-semibold">Penerimaan sudah tercatat</h2>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-2 text-emerald-700">
+                <FileCheck2 className="size-5" aria-hidden="true" />
+                <h2 className="text-sm font-semibold">
+                  Penerimaan sudah tercatat
+                </h2>
+              </div>
+              <PrintButton />
             </div>
             <div className="mt-5 grid gap-4 sm:grid-cols-2">
               <InfoItem label="Nama penerima" value={receipt.confirmed_name} />

@@ -13,6 +13,8 @@ import { AppLayout } from "@/components/AppLayout";
 import { ConfirmSubmitButton } from "@/components/ConfirmSubmitButton";
 import { LoadingLink } from "@/components/LoadingLink";
 import { PaginationControls } from "@/components/PaginationControls";
+import { ReceiptStatusBadge } from "@/components/ReceiptStatusBadge";
+import { fetchOutgoingReceiptStatusMap } from "@/lib/receipts";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { deleteOutgoingLetterAction } from "./actions";
 
@@ -121,6 +123,10 @@ export default async function OutgoingPage({ searchParams }: OutgoingPageProps) 
 
   const safeCurrentPage = Math.min(currentPage, totalPages);
   const rows = (data ?? []) as OutgoingLetter[];
+  const receiptStatusMap = await fetchOutgoingReceiptStatusMap(
+    supabase,
+    rows.map((letter) => letter.id),
+  );
   const previousHref =
     safeCurrentPage > 1 ? getPageHref(safeCurrentPage - 1, searchQuery) : null;
   const nextHref =
@@ -271,6 +277,9 @@ export default async function OutgoingPage({ searchParams }: OutgoingPageProps) 
                     <th className="border-b border-slate-200 px-5 py-3">
                       Sifat
                     </th>
+                    <th className="border-b border-slate-200 px-5 py-3">
+                      Tanda Terima
+                    </th>
                     <th className="border-b border-slate-200 px-5 py-3 text-right">
                       Aksi
                     </th>
@@ -315,6 +324,11 @@ export default async function OutgoingPage({ searchParams }: OutgoingPageProps) 
                           )}
                         </td>
                         <td className="border-b border-slate-100 px-5 py-4">
+                          <ReceiptStatusBadge
+                            receipt={receiptStatusMap.get(letter.id)}
+                          />
+                        </td>
+                        <td className="border-b border-slate-100 px-5 py-4">
                           <div className="flex justify-end gap-2">
                             <LoadingLink
                               href={`/outgoing/${letter.id}`}
@@ -340,7 +354,7 @@ export default async function OutgoingPage({ searchParams }: OutgoingPageProps) 
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={9} className="px-5 py-14 text-center">
+                      <td colSpan={10} className="px-5 py-14 text-center">
                         <div className="mx-auto flex size-12 items-center justify-center rounded-lg bg-[#0A3A60]/10 text-[#0A3A60]">
                           <Send className="size-6" aria-hidden="true" />
                         </div>

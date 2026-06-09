@@ -10,6 +10,7 @@ import {
   resetReceiptRequestAction,
 } from "@/app/receipts/actions";
 import { ConfirmSubmitButton } from "@/components/ConfirmSubmitButton";
+import { CopyReceiptLinkButton } from "@/components/CopyReceiptLinkButton";
 import { PendingSubmitButton } from "@/components/PendingSubmitButton";
 import { LoadingLink } from "@/components/LoadingLink";
 
@@ -141,6 +142,8 @@ export function ReceiptPanel({
 
           {receiptPath ? (
             <div className="space-y-2">
+              <CopyReceiptLinkButton href={receiptPath} />
+
               <LoadingLink
                 href={receiptPath}
                 target="_blank"

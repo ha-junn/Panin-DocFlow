@@ -12,6 +12,8 @@ import { AppLayout } from "@/components/AppLayout";
 import { ConfirmSubmitButton } from "@/components/ConfirmSubmitButton";
 import { LoadingLink } from "@/components/LoadingLink";
 import { PaginationControls } from "@/components/PaginationControls";
+import { ReceiptStatusBadge } from "@/components/ReceiptStatusBadge";
+import { fetchDocumentReceiptStatusMap } from "@/lib/receipts";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { deleteDocumentAction } from "../documents/actions";
 
@@ -123,6 +125,10 @@ export default async function InvoicesPage({ searchParams }: InvoicesPageProps) 
 
   const safeCurrentPage = Math.min(currentPage, totalPages);
   const rows = (invoices ?? []) as unknown as RawInvoiceDocument[];
+  const receiptStatusMap = await fetchDocumentReceiptStatusMap(
+    supabase,
+    rows.map((invoice) => invoice.id),
+  );
   const previousHref =
     safeCurrentPage > 1 ? getPageHref(safeCurrentPage - 1) : null;
   const nextHref =
@@ -238,6 +244,9 @@ export default async function InvoicesPage({ searchParams }: InvoicesPageProps) 
                     <th className="border-b border-slate-200 px-5 py-3">
                       Tanggal
                     </th>
+                    <th className="border-b border-slate-200 px-5 py-3">
+                      Tanda Terima
+                    </th>
                     <th className="border-b border-slate-200 px-5 py-3 text-right">
                       Aksi
                     </th>
@@ -277,6 +286,11 @@ export default async function InvoicesPage({ searchParams }: InvoicesPageProps) 
                           </td>
                           <td className="border-b border-slate-100 px-5 py-4 text-sm text-slate-600">
                             {formatDate(invoice.received_at)}
+                          </td>
+                          <td className="border-b border-slate-100 px-5 py-4">
+                            <ReceiptStatusBadge
+                              receipt={receiptStatusMap.get(invoice.id)}
+                            />
                           </td>
                           <td className="border-b border-slate-100 px-5 py-4">
                             <div className="flex justify-end gap-2">
@@ -320,7 +334,7 @@ export default async function InvoicesPage({ searchParams }: InvoicesPageProps) 
                     })
                   ) : (
                     <tr>
-                      <td colSpan={7} className="px-5 py-14 text-center">
+                      <td colSpan={8} className="px-5 py-14 text-center">
                         <div className="mx-auto flex size-12 items-center justify-center rounded-lg bg-red-50 text-[#B9151B]">
                           <ReceiptText className="size-6" aria-hidden="true" />
                         </div>

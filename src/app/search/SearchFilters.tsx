@@ -14,6 +14,7 @@ type SearchFiltersProps = {
   keyword: string;
   type: string;
   category: string;
+  receipt: string;
   categories: SearchCategory[];
 };
 
@@ -21,6 +22,7 @@ export function SearchFilters({
   keyword,
   type,
   category,
+  receipt,
   categories,
 }: SearchFiltersProps) {
   const pathname = usePathname();
@@ -30,6 +32,7 @@ export function SearchFilters({
   const [query, setQuery] = useState(keyword);
   const [documentType, setDocumentType] = useState(type);
   const [selectedCategory, setSelectedCategory] = useState(category);
+  const [selectedReceipt, setSelectedReceipt] = useState(receipt);
 
   const currentSearch = searchParams.toString();
 
@@ -49,8 +52,12 @@ export function SearchFilters({
       params.set("category", selectedCategory);
     }
 
+    if (selectedReceipt) {
+      params.set("receipt", selectedReceipt);
+    }
+
     return params.toString();
-  }, [documentType, query, selectedCategory]);
+  }, [documentType, query, selectedCategory, selectedReceipt]);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
@@ -84,7 +91,7 @@ export function SearchFilters({
 
   return (
     <form className="border-b border-slate-200 p-5" onSubmit={submitSearch}>
-      <div className="grid gap-3 lg:grid-cols-[minmax(280px,1fr)_160px_220px_auto_auto]">
+      <div className="grid gap-3 lg:grid-cols-[minmax(280px,1fr)_150px_210px_190px_auto_auto]">
         <label className="relative block">
           <Search
             className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400"
@@ -123,6 +130,17 @@ export function SearchFilters({
               {item.name}
             </option>
           ))}
+        </select>
+
+        <select
+          name="receipt"
+          value={selectedReceipt}
+          onChange={(event) => setSelectedReceipt(event.target.value)}
+          className="h-10 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm text-slate-900 outline-none transition focus:border-[#0A3A60] focus:bg-white focus:ring-4 focus:ring-[#0A3A60]/10"
+        >
+          <option value="">Semua tanda terima</option>
+          <option value="pending">Belum diterima</option>
+          <option value="confirmed">Sudah diterima</option>
         </select>
 
         <button
