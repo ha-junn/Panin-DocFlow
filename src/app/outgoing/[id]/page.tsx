@@ -13,12 +13,16 @@ import {
 import { AppLayout } from "@/components/AppLayout";
 import { ConfirmSubmitButton } from "@/components/ConfirmSubmitButton";
 import { LoadingLink } from "@/components/LoadingLink";
+import { ReceiptPanel, type ReceiptSummary } from "@/components/ReceiptPanel";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { deleteOutgoingLetterAction } from "../actions";
 
 type OutgoingDetailPageProps = {
   params: Promise<{
     id: string;
+  }>;
+  searchParams: Promise<{
+    message?: string;
   }>;
 };
 
@@ -69,6 +73,7 @@ function DetailItem({
 
 export default async function OutgoingDetailPage({
   params,
+  searchParams,
 }: OutgoingDetailPageProps) {
   const supabase = await createSupabaseServerClient();
   const {
@@ -80,19 +85,30 @@ export default async function OutgoingDetailPage({
   }
 
   const { id } = await params;
-  const { data, error } = await supabase
-    .from("outgoing_letters")
-    .select(
-      "id, agenda_number, sent_at, sender_staff, sender_department, letter_number, destination_name, attention_to, subject, confidential, notes, batch_notes, attachment_url, created_at, updated_at",
-    )
-    .eq("id", id)
-    .maybeSingle();
+  const { message } = await searchParams;
+  const [{ data, error }, { data: receipt }] = await Promise.all([
+    supabase
+      .from("outgoing_letters")
+      .select(
+        "id, agenda_number, sent_at, sender_staff, sender_department, letter_number, destination_name, attention_to, subject, confidential, notes, batch_notes, attachment_url, created_at, updated_at",
+      )
+      .eq("id", id)
+      .maybeSingle(),
+    supabase
+      .from("receipt_requests")
+      .select(
+        "id, token, status, recipient_name, recipient_unit, recipient_note, signature_data, confirmed_at, created_at",
+      )
+      .eq("outgoing_letter_id", id)
+      .maybeSingle(),
+  ]);
 
   if (error || !data) {
     redirect("/outgoing?message=Surat keluar tidak ditemukan.");
   }
 
   const letter = data as OutgoingLetter;
+  const receiptSummary = receipt as unknown as ReceiptSummary | null;
   let signedAttachmentUrl: string | null = null;
 
   if (letter.attachment_url) {
@@ -143,6 +159,12 @@ export default async function OutgoingDetailPage({
             </form>
           </div>
         </section>
+
+        {message ? (
+          <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">
+            {message}
+          </div>
+        ) : null}
 
         <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
           <section className="space-y-6">
@@ -198,6 +220,13 @@ export default async function OutgoingDetailPage({
           </section>
 
           <aside className="space-y-6">
+            <ReceiptPanel
+              receipt={receiptSummary}
+              targetType="OUTGOING"
+              targetId={letter.id}
+              returnTo={`/outgoing/${letter.id}`}
+            />
+
             <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
               <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-950">
                 <Paperclip className="size-5 text-[#0A3A60]" aria-hidden="true" />

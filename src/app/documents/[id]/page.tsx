@@ -12,6 +12,7 @@ import {
 import { AppLayout } from "@/components/AppLayout";
 import { ConfirmSubmitButton } from "@/components/ConfirmSubmitButton";
 import { LoadingLink } from "@/components/LoadingLink";
+import { ReceiptPanel, type ReceiptSummary } from "@/components/ReceiptPanel";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { deleteDocumentAction } from "../actions";
 
@@ -134,7 +135,7 @@ export default async function DocumentDetailPage({
   const { id } = await params;
   const { message } = await searchParams;
 
-  const [{ data: document }, { data: events }] = await Promise.all([
+  const [{ data: document }, { data: events }, { data: receipt }] = await Promise.all([
       supabase
         .from("documents")
         .select(
@@ -176,6 +177,13 @@ export default async function DocumentDetailPage({
         )
         .eq("document_id", id)
         .order("created_at", { ascending: false }),
+      supabase
+        .from("receipt_requests")
+        .select(
+          "id, token, status, recipient_name, recipient_unit, recipient_note, signature_data, confirmed_at, created_at",
+        )
+        .eq("document_id", id)
+        .maybeSingle(),
     ]);
 
   if (!document) {
@@ -183,6 +191,7 @@ export default async function DocumentDetailPage({
   }
 
   const detail = document as unknown as DocumentDetail;
+  const receiptSummary = receipt as unknown as ReceiptSummary | null;
 
   if (detail.type === "INVOICE") {
     redirect(`/invoices/${detail.id}`);
@@ -322,6 +331,13 @@ export default async function DocumentDetailPage({
           </section>
 
           <aside className="space-y-6">
+            <ReceiptPanel
+              receipt={receiptSummary}
+              targetType="DOCUMENT"
+              targetId={detail.id}
+              returnTo={`/documents/${detail.id}`}
+            />
+
             <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
               <div className="flex items-center gap-2">
                 <Paperclip className="size-5 text-[#0A3A60]" />

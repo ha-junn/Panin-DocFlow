@@ -12,6 +12,7 @@ import {
 import { AppLayout } from "@/components/AppLayout";
 import { ConfirmSubmitButton } from "@/components/ConfirmSubmitButton";
 import { LoadingLink } from "@/components/LoadingLink";
+import { ReceiptPanel, type ReceiptSummary } from "@/components/ReceiptPanel";
 import { deleteDocumentAction } from "@/app/documents/actions";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -128,7 +129,7 @@ export default async function InvoiceDetailPage({
   const { id } = await params;
   const { message } = await searchParams;
 
-  const [{ data: invoice }, { data: events }] = await Promise.all([
+  const [{ data: invoice }, { data: events }, { data: receipt }] = await Promise.all([
     supabase
       .from("documents")
       .select(
@@ -169,6 +170,13 @@ export default async function InvoiceDetailPage({
       )
       .eq("document_id", id)
       .order("created_at", { ascending: false }),
+    supabase
+      .from("receipt_requests")
+      .select(
+        "id, token, status, recipient_name, recipient_unit, recipient_note, signature_data, confirmed_at, created_at",
+      )
+      .eq("document_id", id)
+      .maybeSingle(),
   ]);
 
   if (!invoice) {
@@ -176,6 +184,7 @@ export default async function InvoiceDetailPage({
   }
 
   const detail = invoice as unknown as InvoiceDocument;
+  const receiptSummary = receipt as unknown as ReceiptSummary | null;
   const invoiceDetail = getInvoiceDetail(detail.invoice_details);
   const timeline = (events ?? []) as unknown as DocumentEvent[];
   const amount = Number(invoiceDetail?.amount ?? detail.amount ?? 0);
@@ -318,6 +327,14 @@ export default async function InvoiceDetailPage({
           </section>
 
           <aside className="space-y-6">
+            <ReceiptPanel
+              receipt={receiptSummary}
+              targetType="INVOICE"
+              targetId={detail.id}
+              returnTo={`/invoices/${detail.id}`}
+              accentClassName="text-[#D71920]"
+            />
+
             <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
               <div className="flex items-center gap-2">
                 <Paperclip className="size-5 text-[#D71920]" />
