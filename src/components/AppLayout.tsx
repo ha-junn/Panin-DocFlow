@@ -15,6 +15,7 @@ import {
   FileText,
   LayoutDashboard,
   Menu,
+  ReceiptText,
   Search,
   Send,
   Settings,
@@ -69,6 +70,12 @@ const navigationItems: NavigationItem[] = [
     href: "/outgoing",
     icon: Send,
     badgeKey: "outgoing",
+  },
+  {
+    label: "Tanda Terima",
+    href: "/receipts",
+    icon: ReceiptText,
+    badgeKey: null,
   },
   {
     label: "Laporan",
