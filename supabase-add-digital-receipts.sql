@@ -84,11 +84,11 @@ using (true)
 with check (true);
 
 drop policy if exists "Authenticated users can delete receipt requests" on public.receipt_requests;
-create policy "Authenticated users can delete receipt requests"
+create policy "Admins can delete receipt requests"
 on public.receipt_requests
 for delete
 to authenticated
-using (true);
+using (public.is_admin());
 
 create or replace function public.get_receipt_by_token(p_token uuid)
 returns table (

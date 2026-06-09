@@ -136,3 +136,55 @@ export async function confirmReceiptAction(formData: FormData) {
   revalidatePath(`/receipt/${token}`);
   redirect(`/receipt/${token}?confirmed=1`);
 }
+
+export async function resetReceiptRequestAction(formData: FormData) {
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
+  const receiptId = formString(formData, "receipt_id");
+  const returnTo = normalizeReturnTo(formString(formData, "return_to"));
+
+  if (!receiptId) {
+    redirect(withMessage(returnTo, "Tanda terima tidak valid."));
+  }
+
+  const { data: profile, error: profileError } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (profileError || profile?.role !== "ADMIN") {
+    if (profileError) {
+      console.error("Failed to check admin role before receipt reset", profileError);
+    }
+
+    redirect(
+      withMessage(returnTo, "Reset tanda terima hanya bisa dilakukan admin."),
+    );
+  }
+
+  const { error } = await supabase
+    .from("receipt_requests")
+    .delete()
+    .eq("id", receiptId);
+
+  if (error) {
+    console.error("Failed to reset receipt request", error);
+    redirect(
+      withMessage(
+        returnTo,
+        `Tanda terima gagal direset. Detail: ${error.message}`,
+      ),
+    );
+  }
+
+  revalidatePath(returnTo);
+  redirect(withMessage(returnTo, "Tanda terima berhasil direset."));
+}

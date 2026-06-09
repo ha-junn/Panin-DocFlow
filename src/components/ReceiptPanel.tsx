@@ -3,8 +3,13 @@ import {
   ClipboardSignature,
   ExternalLink,
   Link2,
+  RotateCcw,
 } from "lucide-react";
-import { createReceiptRequestAction } from "@/app/receipts/actions";
+import {
+  createReceiptRequestAction,
+  resetReceiptRequestAction,
+} from "@/app/receipts/actions";
+import { ConfirmSubmitButton } from "@/components/ConfirmSubmitButton";
 import { PendingSubmitButton } from "@/components/PendingSubmitButton";
 import { LoadingLink } from "@/components/LoadingLink";
 
@@ -135,15 +140,30 @@ export function ReceiptPanel({
           )}
 
           {receiptPath ? (
-            <LoadingLink
-              href={receiptPath}
-              target="_blank"
-              pendingLabel="Membuka..."
-              className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 transition hover:border-[#0A3A60]/30 hover:bg-slate-50"
-            >
-              <ExternalLink className="size-4" aria-hidden="true" />
-              Buka Form Tanda Terima
-            </LoadingLink>
+            <div className="space-y-2">
+              <LoadingLink
+                href={receiptPath}
+                target="_blank"
+                pendingLabel="Membuka..."
+                className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 transition hover:border-[#0A3A60]/30 hover:bg-slate-50"
+              >
+                <ExternalLink className="size-4" aria-hidden="true" />
+                Buka Form Tanda Terima
+              </LoadingLink>
+
+              <form action={resetReceiptRequestAction}>
+                <input type="hidden" name="receipt_id" value={receipt.id} />
+                <input type="hidden" name="return_to" value={returnTo} />
+                <ConfirmSubmitButton
+                  message="Reset tanda terima ini? Link lama dan bukti penerimaan akan dihapus, lalu bisa dibuat ulang."
+                  pendingLabel="Mereset..."
+                  className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-red-200 bg-white px-3 text-sm font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-70"
+                >
+                  <RotateCcw className="size-4" aria-hidden="true" />
+                  Reset Tanda Terima
+                </ConfirmSubmitButton>
+              </form>
+            </div>
           ) : null}
         </div>
       ) : (
