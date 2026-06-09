@@ -30,3 +30,4 @@ skills-lock.json
 # unused local asset kept out of deploy
 public/panin-bank-wordmark.png
 .vercel
+docflow-excel/
