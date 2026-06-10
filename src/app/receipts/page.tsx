@@ -345,9 +345,6 @@ export default async function ReceiptsPage({
     (item) =>
       (type ? item.type === type : true) && itemMatchesKeyword(item, keyword),
   );
-  const pendingCount = baseFilteredItems.filter(
-    (item) => item.receipt?.status !== "CONFIRMED",
-  ).length;
   const confirmedCount = baseFilteredItems.filter(
     (item) => item.receipt?.status === "CONFIRMED",
   ).length;
@@ -414,21 +411,13 @@ export default async function ReceiptsPage({
           </div>
         </section>
 
-        <section className="grid gap-4 md:grid-cols-3">
+        <section className="grid gap-4 md:grid-cols-2">
           <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
               Total tampil
             </p>
             <p className="mt-3 text-3xl font-bold tracking-normal text-slate-950">
               {baseFilteredItems.length}
-            </p>
-          </div>
-          <div className="rounded-lg border border-amber-100 bg-amber-50/70 p-5 shadow-sm">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-700">
-              Belum diterima
-            </p>
-            <p className="mt-3 text-3xl font-bold tracking-normal text-amber-700">
-              {pendingCount}
             </p>
           </div>
           <div className="rounded-lg border border-emerald-100 bg-emerald-50/70 p-5 shadow-sm">

@@ -307,14 +307,6 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                 <p className="text-lg font-semibold text-[#D71920]">{invoiceCount}</p>
               </div>
             </div>
-            <LoadingLink
-              href="/receipts/export"
-              pendingLabel="Menyiapkan..."
-              className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-[#0A3A60]/30 hover:bg-slate-50 hover:text-[#0A3A60]"
-            >
-              <ReceiptText className="size-4" aria-hidden="true" />
-              Export Tanda Terima
-            </LoadingLink>
           </div>
         </section>
 

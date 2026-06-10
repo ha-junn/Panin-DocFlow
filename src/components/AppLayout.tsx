@@ -99,7 +99,7 @@ const branchProfile = {
 };
 
 const runningNotice =
-  "Panin DocFlow aktif | Dikembangkan oleh Aprijal | Aktif sejak 02 Juni 2026 | Catat dokumen sesuai tanggal diterima | Pastikan lampiran terbaca jelas | Backup data setiap akhir bulan";
+  "KotakSurat aktif | Dikembangkan oleh Aprijal | Aktif sejak 02 Juni 2026 | Catat dokumen sesuai tanggal diterima | Pastikan lampiran terbaca jelas | Backup data setiap akhir bulan";
 
 function SidebarContent({
   counts,
@@ -117,7 +117,7 @@ function SidebarContent({
           <div className="relative size-12 overflow-hidden rounded-lg">
             <Image
               src="/panin-docflow-symbol-v2.png"
-              alt="Logo Panin DocFlow"
+              alt="Logo KotakSurat"
               fill
               sizes="48px"
               className="object-contain object-center"
@@ -126,8 +126,8 @@ function SidebarContent({
           </div>
           <div className="min-w-0 flex-1">
             <p className="truncate text-lg font-semibold leading-5 tracking-normal text-white">
-              <span className="text-[#F04444]">Panin</span>
-              <span className="text-[#38BDF8]">Bank</span>
+              <span className="text-[#F04444]">Kotak</span>
+              <span className="text-[#38BDF8]">Surat</span>
             </p>
             <p className="mt-0.5 truncate text-xs font-medium text-sky-100">
               DocFlow
@@ -208,9 +208,29 @@ function SignOutButton() {
   );
 }
 
+function ProfileSignOutButton() {
+  const { pending } = useFormStatus();
+
+  return (
+    <button
+      type="submit"
+      disabled={pending}
+      className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-red-100 bg-red-50 text-sm font-semibold text-[#D71920] transition hover:border-red-200 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-70"
+    >
+      {pending ? (
+        <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+      ) : (
+        <LogOut className="size-4" aria-hidden="true" />
+      )}
+      {pending ? "Keluar..." : "Keluar"}
+    </button>
+  );
+}
+
 function TopNavbar({ onMenuClick }: { onMenuClick: () => void }) {
   const pathname = usePathname();
   const [isNotificationOpen, setNotificationOpen] = useState(false);
+  const [isProfileOpen, setProfileOpen] = useState(false);
   const [createdKind, setCreatedKind] = useState<
     "letter" | "invoice" | "outgoing" | null
   >(null);
@@ -316,6 +336,7 @@ function TopNavbar({ onMenuClick }: { onMenuClick: () => void }) {
             onClick={() => {
               setNotificationOpen((current) => !current);
               setUnreadNotification(false);
+              setProfileOpen(false);
             }}
             className="relative inline-flex size-10 items-center justify-center rounded-lg border border-slate-200 text-slate-600 transition hover:border-[#0A3A60]/30 hover:bg-slate-50 hover:text-[#0A3A60]"
             aria-label="Lihat notifikasi"
@@ -346,31 +367,77 @@ function TopNavbar({ onMenuClick }: { onMenuClick: () => void }) {
           ) : null}
         </div>
 
-        <button
-          type="button"
-          className="hidden items-center gap-3 rounded-lg border border-slate-200 bg-white py-1.5 pl-1.5 pr-3 text-left shadow-sm transition hover:border-[#0A3A60]/30 hover:bg-slate-50 sm:flex"
-          aria-label="Buka menu pengguna"
-          title="Profil pengguna"
-        >
-          <Image
-            src="/ha-junn-profile-close.png"
-            alt="Foto profil HARJUN"
-            width={32}
-            height={32}
-            className="size-8 rounded-md object-cover object-[50%_24%]"
-          />
-          <span className="min-w-0">
-            <span className="block truncate text-sm font-semibold leading-4 text-slate-950">
-              {branchProfile.operator}
+        <div className="relative hidden sm:block">
+          <button
+            type="button"
+            onClick={() => {
+              setProfileOpen((current) => !current);
+              setNotificationOpen(false);
+            }}
+            className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white py-1.5 pl-1.5 pr-3 text-left shadow-sm transition hover:border-[#0A3A60]/30 hover:bg-slate-50"
+            aria-label="Buka menu pengguna"
+            aria-expanded={isProfileOpen}
+            title="Profil pengguna"
+          >
+            <Image
+              src="/ha-junn-profile-close.png"
+              alt="Foto profil HARJUN"
+              width={32}
+              height={32}
+              className="size-8 rounded-md object-cover object-[50%_24%]"
+            />
+            <span className="min-w-0">
+              <span className="block truncate text-sm font-semibold leading-4 text-slate-950">
+                {branchProfile.operator}
+              </span>
+              <span className="block truncate text-xs text-slate-500">
+                {branchProfile.role}
+              </span>
             </span>
-            <span className="block truncate text-xs text-slate-500">
-              {branchProfile.role}
-            </span>
-          </span>
-          <ChevronDown className="size-4 text-slate-400" aria-hidden="true" />
-        </button>
+            <ChevronDown
+              className={[
+                "size-4 text-slate-400 transition",
+                isProfileOpen ? "rotate-180" : "",
+              ].join(" ")}
+              aria-hidden="true"
+            />
+          </button>
 
-        <form action={signOutAction}>
+          {isProfileOpen ? (
+            <div className="absolute right-0 top-12 z-50 w-80 rounded-lg border border-slate-200 bg-white p-4 text-sm shadow-xl">
+              <div className="flex items-center gap-3">
+                <Image
+                  src="/ha-junn-profile-close.png"
+                  alt="Foto profil HARJUN"
+                  width={44}
+                  height={44}
+                  className="size-11 rounded-lg object-cover object-[50%_24%]"
+                />
+                <div className="min-w-0">
+                  <p className="truncate font-semibold text-slate-950">
+                    {branchProfile.operator}
+                  </p>
+                  <p className="text-xs text-slate-500">
+                    {branchProfile.role} {branchProfile.code}
+                  </p>
+                </div>
+              </div>
+              <div className="mt-4 rounded-lg border border-[#0A3A60]/10 bg-[#0A3A60]/5 p-3">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#0A3A60]">
+                  Akses aktif
+                </p>
+                <p className="mt-1 text-xs leading-5 text-slate-600">
+                  Input dokumen, invoice, surat keluar, dan tanda terima digital.
+                </p>
+              </div>
+              <form action={signOutAction} className="mt-4">
+                <ProfileSignOutButton />
+              </form>
+            </div>
+          ) : null}
+        </div>
+
+        <form action={signOutAction} className="sm:hidden">
           <SignOutButton />
         </form>
       </div>

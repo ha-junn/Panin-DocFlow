@@ -23,25 +23,27 @@ export function DigitalClock() {
   const display = useMemo(() => timeFormatter.format(now), [now]);
 
   return (
-    <div className="relative overflow-hidden rounded-lg border border-[#0A3A60]/10 bg-white/85 p-4 shadow-sm backdrop-blur">
-      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(135deg,rgba(10,58,96,0.08),rgba(215,25,32,0.06),rgba(20,184,166,0.08))]" />
+    <div className="relative overflow-hidden rounded-lg border border-[#0A3A60]/10 bg-white p-4 shadow-sm">
+      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(135deg,rgba(10,58,96,0.07),rgba(215,25,32,0.05)_50%,rgba(56,189,248,0.08))]" />
+      <div className="pointer-events-none absolute -right-8 -top-10 size-24 rounded-full bg-[#38BDF8]/20 blur-2xl" />
       <div className="relative flex items-center gap-3">
-        <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-[#0A3A60] text-white shadow-sm">
+        <div className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-[#0A3A60] text-white shadow-sm shadow-[#0A3A60]/20">
           <Clock3 className="size-5" aria-hidden="true" />
         </div>
         <div>
           <p
-            className="font-mono text-2xl font-semibold tracking-wide text-slate-950"
+            className="font-mono text-3xl font-bold leading-none tracking-[0.14em] text-slate-950"
             suppressHydrationWarning
           >
-            {display}
+            {display.replaceAll(":", ".")}
           </p>
-          <p
-            className="mt-1 text-xs font-medium text-slate-500"
+          <div
+            className="mt-2 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500"
             suppressHydrationWarning
           >
+            <span className="size-1.5 rounded-full bg-emerald-500" />
             WIB
-          </p>
+          </div>
         </div>
       </div>
     </div>

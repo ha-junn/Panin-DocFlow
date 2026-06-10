@@ -688,7 +688,8 @@ export default async function DashboardPage() {
                 Dashboard Operasional
               </div>
               <h1 className="mt-4 text-2xl font-semibold tracking-tight text-slate-950 sm:text-3xl">
-                Panin DocFlow
+                <span className="text-[#F04444]">Kotak</span>
+                <span className="text-[#38BDF8]">Surat</span>
               </h1>
               <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
                 Monitor surat masuk dan invoice dalam satu ruang kerja
@@ -718,7 +719,7 @@ export default async function DashboardPage() {
                 <LoadingLink
                   href="/outgoing/new"
                   pendingLabel="Membuka..."
-                  className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-[#0A3A60]/20 bg-white px-4 text-sm font-semibold text-[#0A3A60] shadow-sm transition hover:bg-[#0A3A60]/5"
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-[#0F5E7A] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#0A4D63]"
                 >
                   <Send className="size-4" aria-hidden="true" />
                   Tambah Surat Keluar
@@ -734,12 +735,12 @@ export default async function DashboardPage() {
           ))}
         </section>
 
+        <DocumentsTable documents={dashboardData.documents} />
+
         <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
           <WeeklyTrendChart trend={dashboardData.trend} />
           <DepartmentDistribution documents={dashboardData.documents} />
         </section>
-
-        <DocumentsTable documents={dashboardData.documents} />
       </div>
     </AppLayout>
   );
