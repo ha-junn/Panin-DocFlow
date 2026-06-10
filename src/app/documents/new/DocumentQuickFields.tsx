@@ -30,6 +30,8 @@ const recipientSuggestions = [
 ];
 
 const quickCategoryNames = [
+  "AMP TERTUTUP",
+  "KOP SURAT",
   "BPKU",
   "MEMO",
   "MAKAN & TRANSPORT",
