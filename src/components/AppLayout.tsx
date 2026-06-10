@@ -269,25 +269,34 @@ function TopNavbar({ onMenuClick }: { onMenuClick: () => void }) {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const created = params.get("created");
+    let closeTimeout: number | undefined;
 
-    if (
-      created === "letter" ||
-      created === "invoice" ||
-      created === "outgoing"
-    ) {
-      setCreatedKind(created);
-      setUnreadNotification(true);
-      setNotificationOpen(true);
+    const syncTimeout = window.setTimeout(() => {
+      if (
+        created === "letter" ||
+        created === "invoice" ||
+        created === "outgoing"
+      ) {
+        setCreatedKind(created);
+        setUnreadNotification(true);
+        setNotificationOpen(true);
 
-      const timeout = window.setTimeout(() => {
-        setNotificationOpen(false);
-      }, 5000);
+        closeTimeout = window.setTimeout(() => {
+          setNotificationOpen(false);
+        }, 5000);
 
-      return () => window.clearTimeout(timeout);
-    }
+        return;
+      }
 
-    setCreatedKind(null);
-    return undefined;
+      setCreatedKind(null);
+    }, 0);
+
+    return () => {
+      window.clearTimeout(syncTimeout);
+      if (closeTimeout) {
+        window.clearTimeout(closeTimeout);
+      }
+    };
   }, [pathname]);
 
   return (

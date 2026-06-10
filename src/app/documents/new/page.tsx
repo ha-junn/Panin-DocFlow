@@ -6,7 +6,6 @@ import {
   Paperclip,
   Save,
   Send,
-  UserRound,
 } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
 import { CompressedAttachmentInput } from "@/components/CompressedAttachmentInput";
@@ -14,6 +13,7 @@ import { LoadingLink } from "@/components/LoadingLink";
 import { PendingSubmitButton } from "@/components/PendingSubmitButton";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createLetterAction } from "./actions";
+import { DocumentQuickFields } from "./DocumentQuickFields";
 import { EmployeeRows } from "./EmployeeRows";
 
 type NewDocumentPageProps = {
@@ -168,55 +168,10 @@ export default async function NewDocumentPage({
                 />
               </label>
 
-              <label className="block">
-                <span className="flex items-center gap-2 text-sm font-medium text-slate-700">
-                  <UserRound className="size-4 text-slate-400" />
-                  Ditujukan kepada
-                </span>
-                <input
-                  name="recipient_name"
-                  type="text"
-                  required
-                  placeholder="Nama penerima internal"
-                  className="mt-1.5 h-11 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#0A3A60] focus:bg-white focus:ring-4 focus:ring-[#0A3A60]/10"
-                />
-              </label>
-
-              <label className="block">
-                <span className="text-sm font-medium text-slate-700">
-                  Departemen tujuan
-                </span>
-                <select
-                  name="department_id"
-                  required
-                  className="mt-1.5 h-11 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm text-slate-900 outline-none transition focus:border-[#0A3A60] focus:bg-white focus:ring-4 focus:ring-[#0A3A60]/10"
-                >
-                  <option value="">Pilih departemen</option>
-                  {departmentOptions.map((department) => (
-                    <option key={department.id} value={department.id}>
-                      {department.name} ({department.code})
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="block">
-                <span className="text-sm font-medium text-slate-700">
-                  Kategori
-                </span>
-                <select
-                  name="category_id"
-                  required
-                  className="mt-1.5 h-11 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm text-slate-900 outline-none transition focus:border-[#0A3A60] focus:bg-white focus:ring-4 focus:ring-[#0A3A60]/10"
-                >
-                  <option value="">Pilih kategori</option>
-                  {categoryOptions.map((category) => (
-                    <option key={category.id} value={category.id}>
-                      {category.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              <DocumentQuickFields
+                departments={departmentOptions}
+                categories={categoryOptions}
+              />
 
               <label className="block">
                 <span className="text-sm font-medium text-slate-700">
