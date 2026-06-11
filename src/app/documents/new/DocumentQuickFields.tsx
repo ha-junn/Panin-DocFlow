@@ -136,19 +136,19 @@ export function DocumentQuickFields({
                 type="button"
                 onClick={() => setSelectedDepartmentId(department.id)}
                 className={cn(
-                  "flex min-h-11 items-center justify-between rounded-lg border px-3 py-2 text-left text-sm font-semibold transition",
+                  "flex min-h-9 items-center justify-between gap-2 rounded-md border px-2.5 py-1.5 text-left text-xs font-semibold transition",
                   isSelected
                     ? "border-[#0A3A60] bg-[#0A3A60] text-white shadow-sm"
                     : "border-slate-200 bg-slate-50 text-slate-700 hover:border-[#0A3A60]/30 hover:bg-white hover:text-[#0A3A60]",
                 )}
               >
-                <span>
-                  {department.code}
+                <span className="min-w-0">
+                  <span className="font-bold">{department.code}</span>
                   <span className="ml-1 font-medium opacity-80">
                     {department.name}
                   </span>
                 </span>
-                {isSelected ? <Check className="size-4" /> : null}
+                {isSelected ? <Check className="size-3.5 shrink-0" /> : null}
               </button>
             );
           })}
@@ -163,7 +163,7 @@ export function DocumentQuickFields({
           <Tags className="size-4 text-slate-400" />
           Kategori
         </span>
-        <div className="mt-1.5 flex flex-wrap gap-2">
+        <div className="mt-1.5 flex flex-wrap gap-1.5">
           {quickCategories.map((category) => {
             const isSelected = selectedCategoryId === category.id;
 
@@ -173,13 +173,13 @@ export function DocumentQuickFields({
                 type="button"
                 onClick={() => setSelectedCategoryId(category.id)}
                 className={cn(
-                  "inline-flex h-10 items-center gap-2 rounded-full border px-3 text-xs font-semibold transition",
+                  "inline-flex h-8 items-center gap-1.5 rounded-full border px-2.5 text-[11px] font-semibold transition",
                   isSelected
                     ? "border-[#0A3A60] bg-[#0A3A60] text-white shadow-sm"
                     : "border-slate-200 bg-slate-50 text-slate-700 hover:border-[#0A3A60]/30 hover:bg-white hover:text-[#0A3A60]",
                 )}
               >
-                {isSelected ? <Check className="size-3.5" /> : null}
+                {isSelected ? <Check className="size-3" /> : null}
                 {category.name}
               </button>
             );
@@ -190,13 +190,13 @@ export function DocumentQuickFields({
               type="button"
               onClick={() => setShowMoreCategories((current) => !current)}
               className={cn(
-                "inline-flex h-10 items-center gap-2 rounded-full border px-3 text-xs font-semibold transition",
+                "inline-flex h-8 items-center gap-1.5 rounded-full border px-2.5 text-[11px] font-semibold transition",
                 selectedOtherCategory
                   ? "border-[#0A3A60] bg-[#0A3A60] text-white shadow-sm"
                   : "border-slate-200 bg-white text-slate-600 hover:border-[#0A3A60]/30 hover:bg-[#0A3A60]/5 hover:text-[#0A3A60]",
               )}
             >
-              {selectedOtherCategory ? <Check className="size-3.5" /> : null}
+              {selectedOtherCategory ? <Check className="size-3" /> : null}
               {selectedOtherCategory
                 ? selectedOtherCategory.name
                 : "Lainnya"}
@@ -218,14 +218,14 @@ export function DocumentQuickFields({
                     setShowMoreCategories(false);
                   }}
                   className={cn(
-                    "flex min-h-10 items-center justify-between rounded-lg px-3 py-2 text-left text-xs font-semibold transition",
+                    "flex min-h-8 items-center justify-between rounded-md px-2.5 py-1.5 text-left text-[11px] font-semibold transition",
                     isSelected
                       ? "bg-[#0A3A60] text-white"
                       : "bg-white text-slate-600 hover:bg-[#0A3A60]/5 hover:text-[#0A3A60]",
                   )}
                 >
                   {category.name}
-                  {isSelected ? <Check className="size-3.5" /> : null}
+                  {isSelected ? <Check className="size-3" /> : null}
                 </button>
               );
             })}
