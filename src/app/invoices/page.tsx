@@ -356,11 +356,11 @@ export default async function InvoicesPage({ searchParams }: InvoicesPageProps) 
                     <th className="border-b border-slate-200 px-5 py-3">
                       Tanggal
                     </th>
-                    <th className="border-b border-slate-200 px-5 py-3">
-                      Tanda Terima
-                    </th>
                     <th className="border-b border-slate-200 px-5 py-3 text-right">
                       Aksi
+                    </th>
+                    <th className="border-b border-slate-200 px-5 py-3">
+                      Tanda Terima
                     </th>
                   </tr>
                 </thead>
@@ -400,11 +400,6 @@ export default async function InvoicesPage({ searchParams }: InvoicesPageProps) 
                             {formatDate(invoice.received_at)}
                           </td>
                           <td className="border-b border-slate-100 px-5 py-4">
-                            <ReceiptStatusBadge
-                              receipt={receiptStatusMap.get(invoice.id)}
-                            />
-                          </td>
-                          <td className="border-b border-slate-100 px-5 py-4">
                             <div className="flex justify-end gap-2">
                               <LoadingLink
                                 href={`/invoices/${invoice.id}`}
@@ -440,6 +435,11 @@ export default async function InvoicesPage({ searchParams }: InvoicesPageProps) 
                                 </ConfirmSubmitButton>
                               </form>
                             </div>
+                          </td>
+                          <td className="border-b border-slate-100 px-5 py-4">
+                            <ReceiptStatusBadge
+                              receipt={receiptStatusMap.get(invoice.id)}
+                            />
                           </td>
                         </tr>
                       );

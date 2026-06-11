@@ -277,11 +277,11 @@ export default async function OutgoingPage({ searchParams }: OutgoingPageProps) 
                     <th className="border-b border-slate-200 px-5 py-3">
                       Sifat
                     </th>
-                    <th className="border-b border-slate-200 px-5 py-3">
-                      Tanda Terima
-                    </th>
                     <th className="border-b border-slate-200 px-5 py-3 text-right">
                       Aksi
+                    </th>
+                    <th className="border-b border-slate-200 px-5 py-3">
+                      Tanda Terima
                     </th>
                   </tr>
                 </thead>
@@ -324,11 +324,6 @@ export default async function OutgoingPage({ searchParams }: OutgoingPageProps) 
                           )}
                         </td>
                         <td className="border-b border-slate-100 px-5 py-4">
-                          <ReceiptStatusBadge
-                            receipt={receiptStatusMap.get(letter.id)}
-                          />
-                        </td>
-                        <td className="border-b border-slate-100 px-5 py-4">
                           <div className="flex justify-end gap-2">
                             <LoadingLink
                               href={`/outgoing/${letter.id}`}
@@ -349,6 +344,11 @@ export default async function OutgoingPage({ searchParams }: OutgoingPageProps) 
                               </ConfirmSubmitButton>
                             </form>
                           </div>
+                        </td>
+                        <td className="border-b border-slate-100 px-5 py-4">
+                          <ReceiptStatusBadge
+                            receipt={receiptStatusMap.get(letter.id)}
+                          />
                         </td>
                       </tr>
                     ))

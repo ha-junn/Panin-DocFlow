@@ -220,11 +220,11 @@ export default async function DocumentsPage({
                     <th className="border-b border-slate-200 px-5 py-3">
                       Perihal
                     </th>
-                    <th className="border-b border-slate-200 px-5 py-3">
-                      Tanda Terima
-                    </th>
                     <th className="border-b border-slate-200 px-5 py-3 text-right">
                       Aksi
+                    </th>
+                    <th className="border-b border-slate-200 px-5 py-3">
+                      Tanda Terima
                     </th>
                   </tr>
                 </thead>
@@ -259,11 +259,6 @@ export default async function DocumentsPage({
                             <span className="line-clamp-2">
                               {document.subject}
                             </span>
-                          </td>
-                          <td className="border-b border-slate-100 px-5 py-4">
-                            <ReceiptStatusBadge
-                              receipt={receiptStatusMap.get(document.id)}
-                            />
                           </td>
                           <td className="border-b border-slate-100 px-5 py-4">
                             <div className="flex justify-end gap-2">
@@ -301,6 +296,11 @@ export default async function DocumentsPage({
                                 </ConfirmSubmitButton>
                               </form>
                             </div>
+                          </td>
+                          <td className="border-b border-slate-100 px-5 py-4">
+                            <ReceiptStatusBadge
+                              receipt={receiptStatusMap.get(document.id)}
+                            />
                           </td>
                         </tr>
                       ))
