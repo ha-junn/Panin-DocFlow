@@ -706,7 +706,7 @@ export default async function DashboardPage() {
                   className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-[#0A3A60] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#082f4f]"
                 >
                   <MailPlus className="size-4" aria-hidden="true" />
-                  Tambah Surat
+                  Tambah Dokumen
                 </LoadingLink>
                 <LoadingLink
                   href="/invoices/new"

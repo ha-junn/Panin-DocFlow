@@ -285,7 +285,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                 Pencarian Terpusat
               </div>
               <h1 className="mt-4 text-2xl font-semibold tracking-tight text-slate-950 sm:text-3xl">
-                Cari Surat dan Invoice
+                Cari Dokumen dan Invoice
               </h1>
               <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
                 Satu tempat untuk menemukan dokumen berdasarkan nomor agenda,

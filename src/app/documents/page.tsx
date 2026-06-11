@@ -133,7 +133,7 @@ export default async function DocumentsPage({
               className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[#0A3A60] px-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#082f4f]"
             >
               <FilePlus2 className="size-4" aria-hidden="true" />
-              Tambah Surat
+              Tambah Dokumen
             </LoadingLink>
           </div>
         </section>

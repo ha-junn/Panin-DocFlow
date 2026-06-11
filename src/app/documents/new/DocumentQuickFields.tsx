@@ -83,7 +83,7 @@ export function DocumentQuickFields({
       <input name="department_id" type="hidden" value={selectedDepartmentId} />
       <input name="category_id" type="hidden" value={selectedCategoryId} />
 
-      <div className="md:col-span-2">
+      <div className="block">
         <span className="flex items-center gap-2 text-sm font-medium text-slate-700">
           <UserRound className="size-4 text-slate-400" />
           Ditujukan kepada
@@ -97,7 +97,7 @@ export function DocumentQuickFields({
           placeholder="Nama penerima internal"
           className="mt-1.5 h-11 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#0A3A60] focus:bg-white focus:ring-4 focus:ring-[#0A3A60]/10"
         />
-        <div className="mt-3 flex flex-wrap gap-2">
+        <div className="mt-2 flex flex-wrap gap-1.5">
           {recipientSuggestions.map((recipient) => {
             const isSelected = normalizeName(recipientName) === recipient;
 
@@ -107,13 +107,13 @@ export function DocumentQuickFields({
                 type="button"
                 onClick={() => setRecipientName(recipient)}
                 className={cn(
-                  "inline-flex h-9 items-center gap-2 rounded-full border px-3 text-xs font-semibold transition",
+                  "inline-flex h-7 items-center gap-1.5 rounded-full border px-2 text-[10px] font-semibold transition",
                   isSelected
                     ? "border-[#0A3A60] bg-[#0A3A60] text-white shadow-sm"
                     : "border-slate-200 bg-white text-slate-600 hover:border-[#0A3A60]/30 hover:bg-[#0A3A60]/5 hover:text-[#0A3A60]",
                 )}
               >
-                {isSelected ? <Check className="size-3.5" /> : null}
+                {isSelected ? <Check className="size-3" /> : null}
                 {recipient}
               </button>
             );
