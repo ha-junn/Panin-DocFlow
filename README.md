@@ -16,7 +16,8 @@ Aplikasi ini memakai Next.js App Router, TypeScript, Tailwind CSS, Supabase Auth
 - Detail invoice khusus di halaman invoice.
 - Pencarian terpusat untuk dokumen dan invoice berdasarkan keyword, jenis, dan kategori.
 - Laporan, backup bulanan, dan export CSV dalam satu halaman Laporan.
-- Pengaturan departemen, kategori, dan Bersihkan Data Lama untuk maintenance setelah backup.
+- Riwayat Backup untuk mencatat bulan yang sudah diexport dan dicek.
+- Pengaturan departemen, kategori, Riwayat Backup, dan Bersihkan Data Lama untuk maintenance setelah backup.
 
 ## Struktur Project
 
@@ -38,10 +39,12 @@ src/app/backups/page.tsx              Redirect ke Laporan
 src/app/backups/export/route.ts       Export CSV backup bulanan
 src/app/settings/departments/page.tsx Pengaturan departemen
 src/app/settings/categories/page.tsx  Pengaturan kategori
+src/app/settings/backup-history/page.tsx Riwayat backup bulanan
 src/app/settings/cleanup/page.tsx     Bersihkan data lama setelah backup
 src/components/AppLayout.tsx          Layout utama aplikasi
 supabase-schema.sql                   Schema utama Supabase
 supabase-add-outgoing-letters.sql     Schema tambahan Surat Keluar
+supabase-add-backup-history.sql       Schema tambahan Riwayat Backup
 ```
 
 ## Ringkasan Halaman
@@ -52,7 +55,7 @@ supabase-add-outgoing-letters.sql     Schema tambahan Surat Keluar
 - **Invoice Masuk**: daftar dan input invoice masuk.
 - **Surat Keluar**: daftar dan input surat keluar secara batch.
 - **Laporan**: rekap fleksibel, export laporan, dan backup bulanan.
-- **Pengaturan**: kelola departemen, kategori, dan maintenance Bersihkan Data Lama.
+- **Pengaturan**: kelola departemen, kategori, Riwayat Backup, dan maintenance Bersihkan Data Lama.
 
 ## Kebutuhan
 
@@ -143,6 +146,7 @@ supabase-make-invoice-fields-optional.sql
 supabase-single-operator-admin.sql
 supabase-remove-archive-feature.sql
 supabase-add-outgoing-letters.sql
+supabase-add-backup-history.sql
 ```
 
 Untuk optimasi query daftar dokumen/invoice, pastikan index berikut sudah ada di database live:
@@ -210,6 +214,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-or-publishable-key
 - Laporan bisa difilter.
 - Export CSV berhasil.
 - Backup bulanan dari halaman Laporan berhasil.
+- Riwayat Backup bisa dicatat dari Pengaturan.
 - Bersihkan Data Lama hanya dijalankan setelah backup bulan terkait sudah tersimpan.
 
 ## Flow Backup dan Bersihkan Data Lama
@@ -219,10 +224,12 @@ Gunakan alur ini jika data bulan tertentu sudah tidak perlu disimpan aktif di Su
 1. Buka menu **Laporan**.
 2. Pilih bulan dan tahun pada bagian **Backup Bulanan**.
 3. Klik **Export Backup** dan simpan file CSV.
-4. Buka **Pengaturan > Bersihkan Data**.
-5. Pilih bulan yang sama.
-6. Centang konfirmasi bahwa backup sudah tersimpan.
-7. Klik **Bersihkan Data**.
+4. Buka **Pengaturan > Riwayat Backup**.
+5. Pilih bulan yang sama, isi nama file/catatan jika perlu, lalu klik **Catat Riwayat Backup**.
+6. Jika data bulan itu sudah tidak perlu aktif di Supabase, buka **Pengaturan > Bersihkan Data**.
+7. Pilih bulan yang sama.
+8. Centang konfirmasi bahwa backup sudah tersimpan.
+9. Klik **Bersihkan Data**.
 
 Catatan: fitur Bersihkan Data Lama saat ini membersihkan data dokumen masuk dan invoice masuk. Surat keluar tidak ikut dibersihkan dari halaman ini.
 

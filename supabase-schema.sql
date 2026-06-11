@@ -187,6 +187,25 @@ create table if not exists public.document_comments (
   constraint document_comments_comment_not_blank check (length(trim(comment)) > 0)
 );
 
+create table if not exists public.backup_histories (
+  id uuid primary key default gen_random_uuid(),
+  backup_month date not null,
+  document_count integer not null default 0 check (document_count >= 0),
+  invoice_count integer not null default 0 check (invoice_count >= 0),
+  attachment_count integer not null default 0 check (attachment_count >= 0),
+  status text not null default 'BACKED_UP'
+    check (status in ('BACKED_UP', 'VERIFIED', 'CLEANED')),
+  backup_file_name text,
+  notes text,
+  created_by uuid references public.profiles(id) on delete set null,
+  updated_by uuid references public.profiles(id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  verified_at timestamptz,
+  cleaned_at timestamptz,
+  constraint backup_histories_backup_month_unique unique (backup_month)
+);
+
 -- =========================
 -- 3. INDEXES
 -- =========================
@@ -204,6 +223,8 @@ create index if not exists documents_created_by_idx on public.documents(created_
 create index if not exists documents_archived_at_idx on public.documents(archived_at);
 create index if not exists documents_sender_name_idx on public.documents using gin (to_tsvector('simple', sender_name));
 create index if not exists documents_subject_idx on public.documents using gin (to_tsvector('simple', subject));
+create index if not exists backup_histories_backup_month_idx
+on public.backup_histories(backup_month desc);
 
 create index if not exists invoice_details_document_id_idx on public.invoice_details(document_id);
 create index if not exists invoice_details_invoice_number_idx on public.invoice_details(invoice_number);
@@ -688,6 +709,11 @@ create trigger document_categories_set_updated_at
 before update on public.document_categories
 for each row execute function public.set_updated_at();
 
+drop trigger if exists backup_histories_set_updated_at on public.backup_histories;
+create trigger backup_histories_set_updated_at
+before update on public.backup_histories
+for each row execute function public.set_updated_at();
+
 drop trigger if exists invoice_details_set_updated_at on public.invoice_details;
 create trigger invoice_details_set_updated_at
 before update on public.invoice_details
@@ -755,6 +781,7 @@ alter table public.documents enable row level security;
 alter table public.invoice_details enable row level security;
 alter table public.document_events enable row level security;
 alter table public.document_comments enable row level security;
+alter table public.backup_histories enable row level security;
 
 -- Departments
 drop policy if exists "Authenticated users can read departments" on public.departments;
@@ -992,6 +1019,22 @@ with check (actor_id = auth.uid());
 drop policy if exists "Admins can manage comments" on public.document_comments;
 create policy "Admins can manage comments"
 on public.document_comments
+for all
+to authenticated
+using (public.is_admin())
+with check (public.is_admin());
+
+-- Backup histories
+drop policy if exists "Authenticated users can read backup histories" on public.backup_histories;
+create policy "Authenticated users can read backup histories"
+on public.backup_histories
+for select
+to authenticated
+using (true);
+
+drop policy if exists "Admins can manage backup histories" on public.backup_histories;
+create policy "Admins can manage backup histories"
+on public.backup_histories
 for all
 to authenticated
 using (public.is_admin())
