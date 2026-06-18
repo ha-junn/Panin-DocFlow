@@ -266,11 +266,14 @@ export async function createBatchReceiptAction(formData: FormData) {
   }
 
   revalidatePath("/receipts");
-  redirect(
-    `/receipts?batch_created=${encodeURIComponent(batch.token)}&message=${encodeURIComponent(
-      `Tanda terima harian untuk ${recipientName} berhasil dibuat.`,
-    )}`,
-  );
+  const successParams = new URLSearchParams({
+    batch_created: batch.token,
+    batch_recipient: recipientName,
+    batch_date: batchDate,
+    batch_count: String(documentIds.length),
+    message: `Tanda terima harian untuk ${recipientName} berhasil dibuat.`,
+  });
+  redirect(`/receipts?${successParams.toString()}`);
 }
 
 export async function confirmReceiptAction(formData: FormData) {

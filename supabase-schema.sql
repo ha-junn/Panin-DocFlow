@@ -101,6 +101,25 @@ create table if not exists public.document_categories (
   constraint document_categories_name_not_blank check (length(trim(name)) > 0)
 );
 
+create table if not exists public.pic_contacts (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  whatsapp_number text not null,
+  department text,
+  active boolean not null default true,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint pic_contacts_name_not_blank check (length(trim(name)) > 0),
+  constraint pic_contacts_whatsapp_not_blank
+    check (length(trim(whatsapp_number)) >= 8)
+);
+
+create unique index if not exists pic_contacts_name_normalized_unique
+on public.pic_contacts (lower(trim(name)));
+
+create index if not exists pic_contacts_active_idx
+on public.pic_contacts (active, name);
+
 create table if not exists public.agenda_counters (
   id uuid primary key default gen_random_uuid(),
   type public.document_type not null,
@@ -709,6 +728,11 @@ create trigger document_categories_set_updated_at
 before update on public.document_categories
 for each row execute function public.set_updated_at();
 
+drop trigger if exists pic_contacts_set_updated_at on public.pic_contacts;
+create trigger pic_contacts_set_updated_at
+before update on public.pic_contacts
+for each row execute function public.set_updated_at();
+
 drop trigger if exists backup_histories_set_updated_at on public.backup_histories;
 create trigger backup_histories_set_updated_at
 before update on public.backup_histories
@@ -776,6 +800,7 @@ for each row execute function public.handle_new_user();
 alter table public.departments enable row level security;
 alter table public.profiles enable row level security;
 alter table public.document_categories enable row level security;
+alter table public.pic_contacts enable row level security;
 alter table public.agenda_counters enable row level security;
 alter table public.documents enable row level security;
 alter table public.invoice_details enable row level security;
@@ -846,6 +871,22 @@ using (true);
 drop policy if exists "Admins can manage document categories" on public.document_categories;
 create policy "Admins can manage document categories"
 on public.document_categories
+for all
+to authenticated
+using (public.is_admin())
+with check (public.is_admin());
+
+-- PIC contacts
+drop policy if exists "Authenticated users can read PIC contacts" on public.pic_contacts;
+create policy "Authenticated users can read PIC contacts"
+on public.pic_contacts
+for select
+to authenticated
+using (true);
+
+drop policy if exists "Admins can manage PIC contacts" on public.pic_contacts;
+create policy "Admins can manage PIC contacts"
+on public.pic_contacts
 for all
 to authenticated
 using (public.is_admin())

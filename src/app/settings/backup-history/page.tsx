@@ -3,6 +3,7 @@ import {
   Building2,
   CalendarDays,
   CheckCircle2,
+  ContactRound,
   DatabaseBackup,
   DatabaseZap,
   Download,
@@ -124,7 +125,12 @@ function buildReportsHref(monthValue: string) {
 function SettingsTabs({
   active,
 }: {
-  active: "departments" | "categories" | "backup-history" | "cleanup";
+  active:
+    | "departments"
+    | "categories"
+    | "pic-contacts"
+    | "backup-history"
+    | "cleanup";
 }) {
   const tabClass =
     "inline-flex h-9 items-center gap-2 rounded-md px-3 text-sm font-semibold transition hover:bg-white hover:text-[#0A3A60]";
@@ -152,6 +158,16 @@ function SettingsTabs({
       >
         <Layers3 className="size-4" aria-hidden="true" />
         Kategori
+      </LoadingLink>
+      <LoadingLink
+        href="/settings/pic-contacts"
+        pendingLabel="Membuka..."
+        className={`${tabClass} ${
+          active === "pic-contacts" ? activeClass : inactiveClass
+        }`}
+      >
+        <ContactRound className="size-4" aria-hidden="true" />
+        Master PIC
       </LoadingLink>
       <LoadingLink
         href="/settings/backup-history"

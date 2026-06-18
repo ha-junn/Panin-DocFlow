@@ -19,6 +19,7 @@ import { CopyReceiptLinkButton } from "@/components/CopyReceiptLinkButton";
 import { LoadingLink } from "@/components/LoadingLink";
 import { PaginationControls } from "@/components/PaginationControls";
 import { PendingSubmitButton } from "@/components/PendingSubmitButton";
+import { WhatsappReceiptButton } from "@/components/WhatsappReceiptButton";
 import {
   fetchDocumentReceiptStatusMap,
   fetchOutgoingReceiptStatusMap,
@@ -36,6 +37,9 @@ type ReceiptsPageProps = {
     type?: string;
     message?: string;
     batch_created?: string;
+    batch_recipient?: string;
+    batch_date?: string;
+    batch_count?: string;
   }>;
 };
 
@@ -99,6 +103,12 @@ type BatchReceiptGroup = {
   recipient: string;
   unit: string;
   items: ReceiptListItem[];
+};
+
+type PicContact = {
+  name: string;
+  whatsapp_number: string;
+  active: boolean;
 };
 
 type DailyBatchReceiptSection = {
@@ -364,7 +374,7 @@ export default async function ReceiptsPage({
     : "";
   const currentPage = parsePage(params.page);
 
-  const [documentsResult, outgoingResult] = await Promise.all([
+  const [documentsResult, outgoingResult, picContactsResult] = await Promise.all([
     supabase
       .from("documents")
       .select(
@@ -391,10 +401,21 @@ export default async function ReceiptsPage({
       )
       .order("created_at", { ascending: false })
       .limit(MAX_ROWS_PER_SOURCE),
+    supabase
+      .from("pic_contacts")
+      .select("name, whatsapp_number, active")
+      .eq("active", true),
   ]);
 
   const documents = (documentsResult.data ?? []) as unknown as RawDocument[];
   const outgoingLetters = (outgoingResult.data ?? []) as RawOutgoingLetter[];
+  const picContacts = (picContactsResult.data ?? []) as PicContact[];
+  const picContactMap = new Map(
+    picContacts.map((contact) => [
+      normalizeText(contact.name),
+      contact.whatsapp_number,
+    ]),
+  );
 
   const [documentReceiptMap, outgoingReceiptMap] = await Promise.all([
     fetchDocumentReceiptStatusMap(
@@ -457,6 +478,15 @@ export default async function ReceiptsPage({
   const hasActiveFilter = Boolean(keyword || status || type);
   const hasQueryError = documentsResult.error || outgoingResult.error;
   const createdBatchToken = String(params.batch_created ?? "").trim();
+  const createdBatchRecipient = String(params.batch_recipient ?? "").trim();
+  const createdBatchDate = String(params.batch_date ?? "").trim();
+  const createdBatchCount = Math.max(
+    1,
+    Number.parseInt(String(params.batch_count ?? "1"), 10) || 1,
+  );
+  const createdBatchPhone = picContactMap.get(
+    normalizeText(createdBatchRecipient),
+  );
   const message = String(params.message ?? "").trim();
 
   return (
@@ -526,10 +556,34 @@ export default async function ReceiptsPage({
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <span>{message}</span>
               {createdBatchToken ? (
-                <CopyReceiptLinkButton
-                  href={`/receipt-batch/${createdBatchToken}`}
-                  compact
-                />
+                <div className="flex flex-wrap gap-2">
+                  <CopyReceiptLinkButton
+                    href={`/receipt-batch/${createdBatchToken}`}
+                    compact
+                  />
+                  {createdBatchPhone && createdBatchRecipient ? (
+                    <WhatsappReceiptButton
+                      phoneNumber={createdBatchPhone}
+                      recipientName={createdBatchRecipient}
+                      receiptDate={
+                        createdBatchDate
+                          ? formatDate(createdBatchDate)
+                          : "hari ini"
+                      }
+                      itemCount={createdBatchCount}
+                      href={`/receipt-batch/${createdBatchToken}`}
+                      compact
+                    />
+                  ) : (
+                    <LoadingLink
+                      href="/settings/pic-contacts"
+                      pendingLabel="Membuka..."
+                      className="inline-flex h-10 items-center justify-center rounded-lg border border-amber-300 bg-white px-3 text-sm font-semibold text-amber-800"
+                    >
+                      Tambahkan nomor PIC
+                    </LoadingLink>
+                  )}
+                </div>
               ) : null}
             </div>
           </div>
@@ -597,6 +651,18 @@ export default async function ReceiptsPage({
                             </p>
                             <p className="mt-1 text-xs text-slate-500">
                               {group.items.length} item pada tanggal ini
+                            </p>
+                            <p
+                              className={[
+                                "mt-1 text-xs font-medium",
+                                picContactMap.has(normalizeText(group.recipient))
+                                  ? "text-emerald-600"
+                                  : "text-amber-600",
+                              ].join(" ")}
+                            >
+                              {picContactMap.has(normalizeText(group.recipient))
+                                ? "Nomor WhatsApp tersedia"
+                                : "Nomor WhatsApp belum diatur"}
                             </p>
                           </div>
                           <span className="shrink-0 rounded-full bg-[#0A3A60] px-3 py-1 text-xs font-semibold text-white">
@@ -672,8 +738,21 @@ export default async function ReceiptsPage({
                             className="mt-3 inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-[#0A3A60] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#082F4D]"
                           >
                             <Files className="size-4" aria-hidden="true" />
-                            Buat Tanda Terima Harian
+                            {picContactMap.has(normalizeText(group.recipient))
+                              ? "Buat & Siapkan WhatsApp"
+                              : "Buat Tanda Terima Harian"}
                           </PendingSubmitButton>
+                          {!picContactMap.has(
+                            normalizeText(group.recipient),
+                          ) ? (
+                            <LoadingLink
+                              href="/settings/pic-contacts"
+                              pendingLabel="Membuka..."
+                              className="mt-2 inline-flex h-9 w-full items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-600 transition hover:border-[#0A3A60]/30 hover:text-[#0A3A60]"
+                            >
+                              Atur nomor WhatsApp PIC
+                            </LoadingLink>
+                          ) : null}
                         </form>
                       </details>
                     ))}

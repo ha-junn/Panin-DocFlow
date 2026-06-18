@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import {
   Building2,
   CheckCircle2,
+  ContactRound,
   DatabaseBackup,
   DatabaseZap,
   Layers3,
@@ -140,6 +141,14 @@ export default async function CategoriesSettingsPage({
               >
                 <Layers3 className="size-4" aria-hidden="true" />
                 Kategori
+              </LoadingLink>
+              <LoadingLink
+                href="/settings/pic-contacts"
+                pendingLabel="Membuka..."
+                className="inline-flex h-9 items-center gap-2 rounded-md px-3 text-sm font-semibold text-slate-600 transition hover:bg-white hover:text-[#0A3A60]"
+              >
+                <ContactRound className="size-4" aria-hidden="true" />
+                Master PIC
               </LoadingLink>
               <LoadingLink
                 href="/settings/backup-history"
