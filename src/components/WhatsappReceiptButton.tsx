@@ -9,6 +9,7 @@ type WhatsappReceiptButtonProps = {
   itemCount: number;
   href: string;
   compact?: boolean;
+  itemLabel?: string;
 };
 
 export function WhatsappReceiptButton({
@@ -18,13 +19,14 @@ export function WhatsappReceiptButton({
   itemCount,
   href,
   compact = false,
+  itemLabel = "dokumen/invoice",
 }: WhatsappReceiptButtonProps) {
   function openWhatsapp() {
     const receiptUrl = new URL(href, window.location.origin).toString();
     const message = [
       `Halo ${recipientName},`,
       "",
-      `Mohon konfirmasi penerimaan ${itemCount} dokumen/invoice tanggal ${receiptDate}.`,
+      `Mohon konfirmasi penerimaan ${itemCount} ${itemLabel} tanggal ${receiptDate}.`,
       `Silakan buka link tanda terima berikut:`,
       receiptUrl,
       "",

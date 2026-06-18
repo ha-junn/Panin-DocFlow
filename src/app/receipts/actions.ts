@@ -31,6 +31,10 @@ function normalizeRecipient(value: string | null | undefined) {
   return String(value ?? "").trim().toLocaleLowerCase("id-ID");
 }
 
+function isMissingRelationError(error: { code?: string } | null) {
+  return Boolean(error && ["42P01", "PGRST205"].includes(error.code ?? ""));
+}
+
 export async function createReceiptRequestAction(formData: FormData) {
   const supabase = await createSupabaseServerClient();
   const {
@@ -57,9 +61,26 @@ export async function createReceiptRequestAction(formData: FormData) {
     .select("id")
     .eq(targetColumn, targetId)
     .maybeSingle();
+  const batchTable =
+    targetType === "OUTGOING"
+      ? "outgoing_receipt_batch_items"
+      : "receipt_batch_items";
+  const batchTargetColumn =
+    targetType === "OUTGOING" ? "outgoing_letter_id" : "document_id";
+  const { data: existingBatchItem, error: existingBatchError } = await supabase
+    .from(batchTable)
+    .select("id")
+    .eq(batchTargetColumn, targetId)
+    .maybeSingle();
 
-  if (existingError) {
-    console.error("Failed to check receipt request", existingError);
+  if (
+    existingError ||
+    (existingBatchError && !isMissingRelationError(existingBatchError))
+  ) {
+    console.error("Failed to check receipt request", {
+      existingError,
+      existingBatchError,
+    });
     redirect(
       withMessage(
         returnTo,
@@ -68,7 +89,7 @@ export async function createReceiptRequestAction(formData: FormData) {
     );
   }
 
-  if (existingReceipt) {
+  if (existingReceipt || existingBatchItem) {
     revalidatePath(returnTo);
     redirect(withMessage(returnTo, "Link tanda terima sudah tersedia."));
   }
@@ -276,6 +297,169 @@ export async function createBatchReceiptAction(formData: FormData) {
   redirect(`/receipts?${successParams.toString()}`);
 }
 
+export async function createOutgoingBatchReceiptAction(formData: FormData) {
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
+  const returnTo = normalizeReturnTo(formString(formData, "return_to"));
+  const recipientName = formString(formData, "recipient_name");
+  const recipientUnit = formString(formData, "recipient_unit");
+  const batchDate = formString(formData, "batch_date");
+  const outgoingIds = Array.from(
+    new Set(
+      formData
+        .getAll("outgoing_ids")
+        .map((value) => String(value).trim())
+        .filter(Boolean),
+    ),
+  );
+
+  if (!recipientName || !batchDate || outgoingIds.length < 1) {
+    redirect(
+      withMessage(
+        returnTo,
+        "Pilih minimal satu surat keluar untuk tanda terima harian.",
+      ),
+    );
+  }
+
+  const [{ data: letters, error: lettersError }, singleResult, batchResult] =
+    await Promise.all([
+      supabase
+        .from("outgoing_letters")
+        .select("id, sent_at, destination_name, attention_to")
+        .in("id", outgoingIds),
+      supabase
+        .from("receipt_requests")
+        .select("outgoing_letter_id")
+        .in("outgoing_letter_id", outgoingIds),
+      supabase
+        .from("outgoing_receipt_batch_items")
+        .select("outgoing_letter_id")
+        .in("outgoing_letter_id", outgoingIds),
+    ]);
+
+  if (
+    lettersError ||
+    singleResult.error ||
+    batchResult.error ||
+    (letters ?? []).length !== outgoingIds.length
+  ) {
+    console.error("Failed to validate outgoing batch receipt items", {
+      lettersError,
+      singleError: singleResult.error,
+      batchError: batchResult.error,
+    });
+    redirect(
+      withMessage(
+        returnTo,
+        "Tanda terima surat keluar gagal divalidasi. Pastikan SQL surat keluar batch sudah dijalankan.",
+      ),
+    );
+  }
+
+  const selectedRecipients = new Set(
+    (letters ?? []).map((letter) =>
+      normalizeRecipient(letter.attention_to || letter.destination_name),
+    ),
+  );
+  const selectedDates = new Set(
+    (letters ?? []).map((letter) => String(letter.sent_at ?? "").slice(0, 10)),
+  );
+
+  if (
+    selectedRecipients.size !== 1 ||
+    !selectedRecipients.has(normalizeRecipient(recipientName))
+  ) {
+    redirect(
+      withMessage(
+        returnTo,
+        "Tanda terima surat keluar hanya boleh berisi surat untuk penerima yang sama.",
+      ),
+    );
+  }
+
+  if (
+    selectedDates.size !== 1 ||
+    !selectedDates.has(batchDate) ||
+    !/^\d{4}-\d{2}-\d{2}$/.test(batchDate)
+  ) {
+    redirect(
+      withMessage(
+        returnTo,
+        "Tanda terima surat keluar hanya boleh berisi surat dari tanggal kirim yang sama.",
+      ),
+    );
+  }
+
+  if ((singleResult.data ?? []).length > 0 || (batchResult.data ?? []).length > 0) {
+    redirect(
+      withMessage(
+        returnTo,
+        "Sebagian surat keluar yang dipilih sudah memiliki tanda terima.",
+      ),
+    );
+  }
+
+  const { data: batch, error: batchError } = await supabase
+    .from("outgoing_receipt_batches")
+    .insert({
+      recipient_name: recipientName,
+      recipient_unit: recipientUnit || null,
+      created_by: user.id,
+    })
+    .select("id, token")
+    .single();
+
+  if (batchError || !batch) {
+    console.error("Failed to create outgoing receipt batch", batchError);
+    redirect(
+      withMessage(
+        returnTo,
+        `Tanda terima surat keluar gagal dibuat. Detail: ${
+          batchError?.message ?? "Data batch tidak tersedia."
+        }`,
+      ),
+    );
+  }
+
+  const { error: itemsError } = await supabase
+    .from("outgoing_receipt_batch_items")
+    .insert(
+      outgoingIds.map((outgoingId) => ({
+        batch_id: batch.id,
+        outgoing_letter_id: outgoingId,
+      })),
+    );
+
+  if (itemsError) {
+    await supabase.from("outgoing_receipt_batches").delete().eq("id", batch.id);
+    console.error("Failed to create outgoing receipt batch items", itemsError);
+    redirect(
+      withMessage(
+        returnTo,
+        `Item tanda terima surat keluar gagal disimpan. Detail: ${itemsError.message}`,
+      ),
+    );
+  }
+
+  revalidatePath("/receipts");
+  const successParams = new URLSearchParams({
+    outgoing_batch_created: batch.token,
+    outgoing_batch_recipient: recipientName,
+    outgoing_batch_date: batchDate,
+    outgoing_batch_count: String(outgoingIds.length),
+    message: `Tanda terima surat keluar untuk ${recipientName} berhasil dibuat.`,
+  });
+  redirect(`/receipts?${successParams.toString()}`);
+}
+
 export async function confirmReceiptAction(formData: FormData) {
   const supabase = await createSupabaseServerClient();
   const token = formString(formData, "token");
@@ -357,6 +541,51 @@ export async function confirmBatchReceiptAction(formData: FormData) {
   revalidatePath(`/receipt-batch/${token}`);
   revalidatePath("/receipts");
   redirect(`/receipt-batch/${token}?confirmed=1`);
+}
+
+export async function confirmOutgoingBatchReceiptAction(formData: FormData) {
+  const supabase = await createSupabaseServerClient();
+  const token = formString(formData, "token");
+  const confirmedName = formString(formData, "recipient_name");
+  const confirmedUnit = formString(formData, "recipient_unit");
+  const confirmedNote = formString(formData, "recipient_note");
+  const signatureData = formString(formData, "signature_data");
+
+  if (!token) {
+    redirect("/receipt-outgoing-batch/invalid?message=Tanda terima tidak valid.");
+  }
+
+  if (!confirmedName) {
+    redirect(
+      `/receipt-outgoing-batch/${token}?message=${encodeURIComponent(
+        "Nama penerima wajib diisi.",
+      )}`,
+    );
+  }
+
+  const { error } = await supabase.rpc(
+    "confirm_outgoing_receipt_batch_by_token",
+    {
+      p_token: token,
+      p_confirmed_name: confirmedName,
+      p_confirmed_unit: confirmedUnit || null,
+      p_confirmed_note: confirmedNote || null,
+      p_signature_data: signatureData || null,
+    },
+  );
+
+  if (error) {
+    console.error("Failed to confirm outgoing batch receipt", error);
+    redirect(
+      `/receipt-outgoing-batch/${token}?message=${encodeURIComponent(
+        `Tanda terima surat keluar gagal dikonfirmasi. Detail: ${error.message}`,
+      )}`,
+    );
+  }
+
+  revalidatePath(`/receipt-outgoing-batch/${token}`);
+  revalidatePath("/receipts");
+  redirect(`/receipt-outgoing-batch/${token}?confirmed=1`);
 }
 
 export async function resetReceiptRequestAction(formData: FormData) {

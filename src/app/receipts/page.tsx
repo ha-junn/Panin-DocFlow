@@ -13,7 +13,10 @@ import {
   Send,
   Users,
 } from "lucide-react";
-import { createBatchReceiptAction } from "@/app/receipts/actions";
+import {
+  createBatchReceiptAction,
+  createOutgoingBatchReceiptAction,
+} from "@/app/receipts/actions";
 import { AppLayout } from "@/components/AppLayout";
 import { CopyReceiptLinkButton } from "@/components/CopyReceiptLinkButton";
 import { LoadingLink } from "@/components/LoadingLink";
@@ -40,6 +43,10 @@ type ReceiptsPageProps = {
     batch_recipient?: string;
     batch_date?: string;
     batch_count?: string;
+    outgoing_batch_created?: string;
+    outgoing_batch_recipient?: string;
+    outgoing_batch_date?: string;
+    outgoing_batch_count?: string;
   }>;
 };
 
@@ -96,6 +103,8 @@ type ReceiptListItem = {
   category: string;
   description: string;
   href: string;
+  batchRecipient?: string;
+  batchUnit?: string;
   receipt?: ReceiptStatusSummary;
 };
 
@@ -278,6 +287,8 @@ function buildOutgoingItems(
     category: letter.confidential ? "Confidential" : "Umum",
     description: letter.attention_to ? `u.p. ${letter.attention_to}` : "-",
     href: `/outgoing/${letter.id}`,
+    batchRecipient: letter.attention_to || letter.destination_name,
+    batchUnit: letter.destination_name,
     receipt: receiptStatusMap.get(letter.id),
   }));
 }
@@ -347,6 +358,58 @@ function buildDailyBatchReceiptSections(items: ReceiptListItem[]) {
             second.items.length - first.items.length ||
             first.recipient.localeCompare(second.recipient, "id"),
         ),
+    }))
+    .filter((section) => section.groups.length > 0)
+    .sort((first, second) => second.dateKey.localeCompare(first.dateKey));
+}
+
+function buildOutgoingDailyBatchReceiptSections(items: ReceiptListItem[]) {
+  const dailyGroups = new Map<string, Map<string, BatchReceiptGroup>>();
+
+  for (const item of items) {
+    const recipient = item.batchRecipient || item.recipient;
+
+    if (
+      item.type !== "OUTGOING" ||
+      item.receipt ||
+      !recipient ||
+      recipient === "-"
+    ) {
+      continue;
+    }
+
+    const dateKey = getDateKey(item.date);
+    const recipientKey = normalizeText(recipient);
+    const groupsForDate =
+      dailyGroups.get(dateKey) ?? new Map<string, BatchReceiptGroup>();
+    const existing = groupsForDate.get(recipientKey);
+    const unit = item.batchUnit || item.recipient;
+
+    if (existing) {
+      existing.items.push(item);
+      if (!existing.unit.includes(unit)) {
+        existing.unit = "Beberapa tujuan";
+      }
+      continue;
+    }
+
+    groupsForDate.set(recipientKey, {
+      recipient,
+      unit,
+      items: [item],
+    });
+    dailyGroups.set(dateKey, groupsForDate);
+  }
+
+  return Array.from(dailyGroups.entries())
+    .map(([dateKey, groups]): DailyBatchReceiptSection => ({
+      dateKey,
+      dateLabel: formatDate(dateKey),
+      groups: Array.from(groups.values()).sort(
+        (first, second) =>
+          second.items.length - first.items.length ||
+          first.recipient.localeCompare(second.recipient, "id"),
+      ),
     }))
     .filter((section) => section.groups.length > 0)
     .sort((first, second) => second.dateKey.localeCompare(first.dateKey));
@@ -436,6 +499,8 @@ export default async function ReceiptsPage({
       new Date(second.sortDate).getTime() - new Date(first.sortDate).getTime(),
   );
   const dailyBatchReceiptSections = buildDailyBatchReceiptSections(allItems);
+  const outgoingDailyBatchSections =
+    buildOutgoingDailyBatchReceiptSections(allItems);
 
   const baseFilteredItems = allItems.filter(
     (item) =>
@@ -487,6 +552,19 @@ export default async function ReceiptsPage({
   const createdBatchPhone = picContactMap.get(
     normalizeText(createdBatchRecipient),
   );
+  const outgoingBatchToken = String(params.outgoing_batch_created ?? "").trim();
+  const outgoingBatchRecipient = String(
+    params.outgoing_batch_recipient ?? "",
+  ).trim();
+  const outgoingBatchDate = String(params.outgoing_batch_date ?? "").trim();
+  const outgoingBatchCount = Math.max(
+    1,
+    Number.parseInt(String(params.outgoing_batch_count ?? "1"), 10) || 1,
+  );
+  const outgoingBatchPhone = picContactMap.get(
+    normalizeText(outgoingBatchRecipient),
+  );
+  const hasCreatedReceipt = Boolean(createdBatchToken || outgoingBatchToken);
   const message = String(params.message ?? "").trim();
 
   return (
@@ -548,7 +626,7 @@ export default async function ReceiptsPage({
           <div
             className={[
               "rounded-lg border px-5 py-4 text-sm font-semibold",
-              createdBatchToken
+              hasCreatedReceipt
                 ? "border-emerald-200 bg-emerald-50 text-emerald-700"
                 : "border-amber-200 bg-amber-50 text-amber-800",
             ].join(" ")}
@@ -581,6 +659,36 @@ export default async function ReceiptsPage({
                       className="inline-flex h-10 items-center justify-center rounded-lg border border-amber-300 bg-white px-3 text-sm font-semibold text-amber-800"
                     >
                       Tambahkan nomor PIC
+                    </LoadingLink>
+                  )}
+                </div>
+              ) : outgoingBatchToken ? (
+                <div className="flex flex-wrap gap-2">
+                  <CopyReceiptLinkButton
+                    href={`/receipt-outgoing-batch/${outgoingBatchToken}`}
+                    compact
+                  />
+                  {outgoingBatchPhone && outgoingBatchRecipient ? (
+                    <WhatsappReceiptButton
+                      phoneNumber={outgoingBatchPhone}
+                      recipientName={outgoingBatchRecipient}
+                      receiptDate={
+                        outgoingBatchDate
+                          ? formatDate(outgoingBatchDate)
+                          : "hari ini"
+                      }
+                      itemCount={outgoingBatchCount}
+                      itemLabel="surat keluar"
+                      href={`/receipt-outgoing-batch/${outgoingBatchToken}`}
+                      compact
+                    />
+                  ) : (
+                    <LoadingLink
+                      href="/settings/pic-contacts"
+                      pendingLabel="Membuka..."
+                      className="inline-flex h-10 items-center justify-center rounded-lg border border-amber-300 bg-white px-3 text-sm font-semibold text-amber-800"
+                    >
+                      Tambahkan nomor penerima
                     </LoadingLink>
                   )}
                 </div>
@@ -768,6 +876,202 @@ export default async function ReceiptsPage({
           )}
         </section>
 
+        <section className="overflow-hidden rounded-xl border border-orange-200 bg-[linear-gradient(135deg,#fff7ed_0%,#ffffff_52%,#fffbeb_100%)] shadow-sm">
+          <div className="flex flex-col gap-4 border-b border-orange-200 p-5 sm:flex-row sm:items-start sm:justify-between">
+            <div className="flex items-start gap-3">
+              <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-orange-600 text-white shadow-sm">
+                <Send className="size-5" aria-hidden="true" />
+              </div>
+              <div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <h2 className="text-base font-semibold text-slate-950">
+                    Tanda Terima Surat Keluar Harian
+                  </h2>
+                  <span className="rounded-full bg-orange-100 px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.12em] text-orange-700">
+                    Pengiriman
+                  </span>
+                </div>
+                <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-500">
+                  Surat dikelompokkan berdasarkan tanggal kirim dan nama U.p.
+                  Jika U.p. kosong, sistem menggunakan nama tujuan.
+                </p>
+              </div>
+            </div>
+            <LoadingLink
+              href="/outgoing/new"
+              pendingLabel="Membuka..."
+              className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg border border-orange-200 bg-white px-3 text-sm font-semibold text-orange-700 shadow-sm transition hover:bg-orange-50"
+            >
+              Tambah Surat Keluar
+            </LoadingLink>
+          </div>
+
+          {outgoingDailyBatchSections.length > 0 ? (
+            <div className="space-y-5 p-4">
+              {outgoingDailyBatchSections.map((section, sectionIndex) => (
+                <div
+                  key={section.dateKey}
+                  className="overflow-hidden rounded-xl border border-orange-200 bg-white"
+                >
+                  <div className="flex flex-col gap-3 border-b border-orange-100 bg-orange-50/60 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="flex size-10 items-center justify-center rounded-lg bg-orange-600 text-white">
+                        <CalendarDays className="size-5" aria-hidden="true" />
+                      </div>
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-orange-600">
+                          Tanggal pengiriman
+                        </p>
+                        <h3 className="mt-0.5 font-semibold text-slate-950">
+                          {section.dateLabel}
+                        </h3>
+                      </div>
+                    </div>
+                    <span
+                      className={[
+                        "w-fit rounded-full px-3 py-1 text-xs font-semibold",
+                        sectionIndex === 0
+                          ? "bg-orange-600 text-white"
+                          : "bg-orange-100 text-orange-700",
+                      ].join(" ")}
+                    >
+                      {section.groups.length} penerima tersedia
+                    </span>
+                  </div>
+
+                  <div className="grid gap-3 p-3 lg:grid-cols-2">
+                    {section.groups.map((group) => {
+                      const hasWhatsapp = picContactMap.has(
+                        normalizeText(group.recipient),
+                      );
+
+                      return (
+                        <details
+                          key={`${section.dateKey}-${normalizeText(group.recipient)}`}
+                          className="group h-fit overflow-hidden rounded-xl border border-orange-100 bg-white shadow-sm open:border-orange-300"
+                        >
+                          <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-4 py-4">
+                            <div className="min-w-0">
+                              <p className="truncate font-semibold text-slate-950">
+                                {group.recipient}
+                              </p>
+                              <p className="mt-1 truncate text-xs text-slate-500">
+                                {group.unit} · {group.items.length} surat
+                              </p>
+                              <p
+                                className={[
+                                  "mt-1 text-xs font-medium",
+                                  hasWhatsapp
+                                    ? "text-emerald-600"
+                                    : "text-orange-600",
+                                ].join(" ")}
+                              >
+                                {hasWhatsapp
+                                  ? "Nomor WhatsApp tersedia"
+                                  : "Nomor WhatsApp belum diatur"}
+                              </p>
+                            </div>
+                            <span className="shrink-0 rounded-full bg-orange-600 px-3 py-1 text-xs font-semibold text-white">
+                              Buka
+                            </span>
+                          </summary>
+
+                          <form
+                            action={createOutgoingBatchReceiptAction}
+                            className="border-t border-orange-100 bg-orange-50/40 p-4"
+                          >
+                            <input
+                              type="hidden"
+                              name="recipient_name"
+                              value={group.recipient}
+                            />
+                            <input
+                              type="hidden"
+                              name="recipient_unit"
+                              value={group.unit}
+                            />
+                            <input
+                              type="hidden"
+                              name="batch_date"
+                              value={section.dateKey}
+                            />
+                            <input
+                              type="hidden"
+                              name="return_to"
+                              value="/receipts"
+                            />
+
+                            <div className="grid gap-2">
+                              {group.items.map((item) => (
+                                <label
+                                  key={`outgoing-${item.id}`}
+                                  className="flex cursor-pointer items-start gap-3 rounded-lg border border-orange-100 bg-white px-3 py-3 transition hover:border-orange-300"
+                                >
+                                  <input
+                                    type="checkbox"
+                                    name="outgoing_ids"
+                                    value={item.id}
+                                    defaultChecked
+                                    className="mt-0.5 size-4 accent-orange-600"
+                                  />
+                                  <span className="min-w-0 flex-1">
+                                    <span className="flex flex-wrap items-center gap-2">
+                                      <span className="font-semibold text-slate-950">
+                                        {item.agendaNumber}
+                                      </span>
+                                      <span className="rounded-md bg-orange-100 px-2 py-0.5 text-xs font-semibold text-orange-700">
+                                        Surat Keluar
+                                      </span>
+                                    </span>
+                                    <span className="mt-1 block truncate text-sm text-slate-500">
+                                      {item.sender} · {item.description}
+                                    </span>
+                                  </span>
+                                </label>
+                              ))}
+                            </div>
+
+                            <div className="mt-4 flex items-center gap-2 rounded-lg border border-orange-200 bg-white px-3 py-2 text-xs font-medium text-orange-700">
+                              <CalendarDays
+                                className="size-3.5 shrink-0"
+                                aria-hidden="true"
+                              />
+                              Hanya pengiriman {section.dateLabel}
+                            </div>
+
+                            <PendingSubmitButton
+                              pendingLabel="Membuat tanda terima..."
+                              className="mt-3 inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-orange-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-orange-700"
+                            >
+                              <Send className="size-4" aria-hidden="true" />
+                              {hasWhatsapp
+                                ? "Buat & Siapkan WhatsApp"
+                                : "Buat Tanda Terima Surat"}
+                            </PendingSubmitButton>
+                            {!hasWhatsapp ? (
+                              <LoadingLink
+                                href="/settings/pic-contacts"
+                                pendingLabel="Membuka..."
+                                className="mt-2 inline-flex h-9 w-full items-center justify-center rounded-lg border border-orange-200 bg-white px-3 text-xs font-semibold text-orange-700"
+                              >
+                                Atur nomor WhatsApp penerima
+                              </LoadingLink>
+                            ) : null}
+                          </form>
+                        </details>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="m-4 rounded-xl border border-dashed border-orange-200 bg-white/70 px-4 py-5 text-sm text-slate-500">
+              Belum ada surat keluar yang siap dibuatkan tanda terima harian.
+            </div>
+          )}
+        </section>
+
         <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
           <div className="border-b border-slate-200 p-5">
             <form
@@ -898,7 +1202,11 @@ export default async function ReceiptsPage({
                           {item.receipt?.scope === "BATCH" &&
                           item.receipt.token ? (
                             <CopyReceiptLinkButton
-                              href={`/receipt-batch/${item.receipt.token}`}
+                              href={
+                                item.type === "OUTGOING"
+                                  ? `/receipt-outgoing-batch/${item.receipt.token}`
+                                  : `/receipt-batch/${item.receipt.token}`
+                              }
                               compact
                             />
                           ) : null}

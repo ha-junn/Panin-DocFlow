@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
 import { ConfirmSubmitButton } from "@/components/ConfirmSubmitButton";
+import { CopyReceiptLinkButton } from "@/components/CopyReceiptLinkButton";
 import { LoadingLink } from "@/components/LoadingLink";
 import { ReceiptPanel, type ReceiptSummary } from "@/components/ReceiptPanel";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -42,6 +43,21 @@ type OutgoingLetter = {
   attachment_url: string | null;
   created_at: string;
   updated_at: string;
+};
+
+type OutgoingBatchReceipt = {
+  batch:
+    | {
+        token: string;
+        status: "PENDING" | "CONFIRMED";
+        confirmed_at: string | null;
+      }
+    | {
+        token: string;
+        status: "PENDING" | "CONFIRMED";
+        confirmed_at: string | null;
+      }[]
+    | null;
 };
 
 const dateFormatter = new Intl.DateTimeFormat("id-ID", {
@@ -86,22 +102,30 @@ export default async function OutgoingDetailPage({
 
   const { id } = await params;
   const { message } = await searchParams;
-  const [{ data, error }, { data: receipt }] = await Promise.all([
-    supabase
-      .from("outgoing_letters")
-      .select(
-        "id, agenda_number, sent_at, sender_staff, sender_department, letter_number, destination_name, attention_to, subject, confidential, notes, batch_notes, attachment_url, created_at, updated_at",
-      )
-      .eq("id", id)
-      .maybeSingle(),
-    supabase
-      .from("receipt_requests")
-      .select(
-        "id, token, status, recipient_name, recipient_unit, recipient_note, signature_data, confirmed_at, created_at",
-      )
-      .eq("outgoing_letter_id", id)
-      .maybeSingle(),
-  ]);
+  const [{ data, error }, { data: receipt }, { data: batchItem }] =
+    await Promise.all([
+      supabase
+        .from("outgoing_letters")
+        .select(
+          "id, agenda_number, sent_at, sender_staff, sender_department, letter_number, destination_name, attention_to, subject, confidential, notes, batch_notes, attachment_url, created_at, updated_at",
+        )
+        .eq("id", id)
+        .maybeSingle(),
+      supabase
+        .from("receipt_requests")
+        .select(
+          "id, token, status, recipient_name, recipient_unit, recipient_note, signature_data, confirmed_at, created_at",
+        )
+        .eq("outgoing_letter_id", id)
+        .maybeSingle(),
+      supabase
+        .from("outgoing_receipt_batch_items")
+        .select(
+          "batch:outgoing_receipt_batches(token, status, confirmed_at)",
+        )
+        .eq("outgoing_letter_id", id)
+        .maybeSingle(),
+    ]);
 
   if (error || !data) {
     redirect("/outgoing?message=Surat keluar tidak ditemukan.");
@@ -109,6 +133,11 @@ export default async function OutgoingDetailPage({
 
   const letter = data as OutgoingLetter;
   const receiptSummary = receipt as unknown as ReceiptSummary | null;
+  const batchRelation = (batchItem as unknown as OutgoingBatchReceipt | null)
+    ?.batch;
+  const outgoingBatch = Array.isArray(batchRelation)
+    ? batchRelation[0]
+    : batchRelation;
   let signedAttachmentUrl: string | null = null;
 
   if (letter.attachment_url) {
@@ -220,12 +249,43 @@ export default async function OutgoingDetailPage({
           </section>
 
           <aside className="space-y-6">
-            <ReceiptPanel
-              receipt={receiptSummary}
-              targetType="OUTGOING"
-              targetId={letter.id}
-              returnTo={`/outgoing/${letter.id}`}
-            />
+            {outgoingBatch ? (
+              <div className="rounded-xl border border-orange-200 bg-white p-5 shadow-sm">
+                <div className="flex items-center gap-2 text-orange-700">
+                  <Send className="size-5" aria-hidden="true" />
+                  <h2 className="text-sm font-semibold">
+                    Tanda Terima Surat Keluar Harian
+                  </h2>
+                </div>
+                <p className="mt-3 text-sm leading-6 text-slate-500">
+                  Surat ini sudah tergabung dalam tanda terima harian.
+                </p>
+                <span
+                  className={[
+                    "mt-4 inline-flex rounded-full px-3 py-1 text-xs font-semibold",
+                    outgoingBatch.status === "CONFIRMED"
+                      ? "bg-emerald-50 text-emerald-700"
+                      : "bg-orange-100 text-orange-700",
+                  ].join(" ")}
+                >
+                  {outgoingBatch.status === "CONFIRMED"
+                    ? "Sudah diterima"
+                    : "Menunggu konfirmasi"}
+                </span>
+                <div className="mt-4">
+                  <CopyReceiptLinkButton
+                    href={`/receipt-outgoing-batch/${outgoingBatch.token}`}
+                  />
+                </div>
+              </div>
+            ) : (
+              <ReceiptPanel
+                receipt={receiptSummary}
+                targetType="OUTGOING"
+                targetId={letter.id}
+                returnTo={`/outgoing/${letter.id}`}
+              />
+            )}
 
             <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
               <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-950">
