@@ -109,6 +109,7 @@ export async function createBatchReceiptAction(formData: FormData) {
   const returnTo = normalizeReturnTo(formString(formData, "return_to"));
   const recipientName = formString(formData, "recipient_name");
   const recipientUnit = formString(formData, "recipient_unit");
+  const batchDate = formString(formData, "batch_date");
   const documentIds = Array.from(
     new Set(
       formData
@@ -118,7 +119,7 @@ export async function createBatchReceiptAction(formData: FormData) {
     ),
   );
 
-  if (!recipientName || documentIds.length < 2) {
+  if (!recipientName || !batchDate || documentIds.length < 2) {
     redirect(
       withMessage(
         returnTo,
@@ -131,7 +132,7 @@ export async function createBatchReceiptAction(formData: FormData) {
     await Promise.all([
       supabase
         .from("documents")
-        .select("id")
+        .select("id, received_at")
         .in("id", documentIds),
       supabase
         .from("receipt_requests")
@@ -158,6 +159,25 @@ export async function createBatchReceiptAction(formData: FormData) {
       withMessage(
         returnTo,
         "Tanda terima gabungan gagal divalidasi. Pastikan SQL batch sudah dijalankan.",
+      ),
+    );
+  }
+
+  const selectedDates = new Set(
+    (documents ?? []).map((document) =>
+      String(document.received_at ?? "").slice(0, 10),
+    ),
+  );
+
+  if (
+    selectedDates.size !== 1 ||
+    !selectedDates.has(batchDate) ||
+    !/^\d{4}-\d{2}-\d{2}$/.test(batchDate)
+  ) {
+    redirect(
+      withMessage(
+        returnTo,
+        "Tanda terima harian hanya boleh berisi dokumen dari tanggal yang sama.",
       ),
     );
   }
@@ -216,7 +236,7 @@ export async function createBatchReceiptAction(formData: FormData) {
   revalidatePath("/receipts");
   redirect(
     `/receipts?batch_created=${encodeURIComponent(batch.token)}&message=${encodeURIComponent(
-      `Tanda terima gabungan untuk ${recipientName} berhasil dibuat.`,
+      `Tanda terima harian untuk ${recipientName} berhasil dibuat.`,
     )}`,
   );
 }

@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import {
   ArrowUpRight,
+  CalendarDays,
   CheckCircle2,
   Clock3,
   FileText,
@@ -100,6 +101,12 @@ type BatchReceiptGroup = {
   items: ReceiptListItem[];
 };
 
+type DailyBatchReceiptSection = {
+  dateKey: string;
+  dateLabel: string;
+  groups: BatchReceiptGroup[];
+};
+
 const PAGE_SIZE = 20;
 const MAX_ROWS_PER_SOURCE = 700;
 
@@ -126,6 +133,10 @@ function normalizeText(value: string) {
 
 function formatDate(value: string) {
   return dateFormatter.format(new Date(value));
+}
+
+function getDateKey(value: string) {
+  return value.slice(0, 10);
 }
 
 function getInvoiceDetail(document: RawDocument) {
@@ -281,8 +292,8 @@ function itemMatchesKeyword(item: ReceiptListItem, keyword: string) {
   return haystack.includes(normalizeText(keyword));
 }
 
-function buildBatchReceiptGroups(items: ReceiptListItem[]) {
-  const groups = new Map<string, BatchReceiptGroup>();
+function buildDailyBatchReceiptSections(items: ReceiptListItem[]) {
+  const dailyGroups = new Map<string, Map<string, BatchReceiptGroup>>();
 
   for (const item of items) {
     if (
@@ -294,8 +305,11 @@ function buildBatchReceiptGroups(items: ReceiptListItem[]) {
       continue;
     }
 
-    const key = normalizeText(item.recipient);
-    const existing = groups.get(key);
+    const dateKey = getDateKey(item.date);
+    const recipientKey = normalizeText(item.recipient);
+    const groupsForDate =
+      dailyGroups.get(dateKey) ?? new Map<string, BatchReceiptGroup>();
+    const existing = groupsForDate.get(recipientKey);
 
     if (existing) {
       existing.items.push(item);
@@ -305,20 +319,28 @@ function buildBatchReceiptGroups(items: ReceiptListItem[]) {
       continue;
     }
 
-    groups.set(key, {
+    groupsForDate.set(recipientKey, {
       recipient: item.recipient,
       unit: item.department,
       items: [item],
     });
+    dailyGroups.set(dateKey, groupsForDate);
   }
 
-  return Array.from(groups.values())
-    .filter((group) => group.items.length >= 2)
-    .sort(
-      (first, second) =>
-        second.items.length - first.items.length ||
-        first.recipient.localeCompare(second.recipient, "id"),
-    );
+  return Array.from(dailyGroups.entries())
+    .map(([dateKey, groups]): DailyBatchReceiptSection => ({
+      dateKey,
+      dateLabel: formatDate(dateKey),
+      groups: Array.from(groups.values())
+        .filter((group) => group.items.length >= 2)
+        .sort(
+          (first, second) =>
+            second.items.length - first.items.length ||
+            first.recipient.localeCompare(second.recipient, "id"),
+        ),
+    }))
+    .filter((section) => section.groups.length > 0)
+    .sort((first, second) => second.dateKey.localeCompare(first.dateKey));
 }
 
 export default async function ReceiptsPage({
@@ -393,7 +415,7 @@ export default async function ReceiptsPage({
     (first, second) =>
       new Date(second.sortDate).getTime() - new Date(first.sortDate).getTime(),
   );
-  const batchReceiptGroups = buildBatchReceiptGroups(allItems);
+  const dailyBatchReceiptSections = buildDailyBatchReceiptSections(allItems);
 
   const baseFilteredItems = allItems.filter(
     (item) =>
@@ -521,97 +543,149 @@ export default async function ReceiptsPage({
             </div>
             <div>
               <h2 className="text-base font-semibold text-slate-950">
-                Tanda Terima Gabungan per PIC
+                Tanda Terima Harian per PIC
               </h2>
               <p className="mt-1 text-sm leading-6 text-slate-500">
-                Gabungkan beberapa dokumen atau invoice untuk PIC yang sama,
-                lalu kirim satu link dan minta satu tanda tangan.
+                Dokumen otomatis dipisahkan berdasarkan tanggal penerimaan.
+                Tanggal lama tidak akan tercampur dengan tanggal hari ini.
               </p>
             </div>
           </div>
 
-          {batchReceiptGroups.length > 0 ? (
-            <div className="mt-5 grid gap-3">
-              {batchReceiptGroups.map((group) => (
-                <details
-                  key={normalizeText(group.recipient)}
-                  className="group rounded-lg border border-slate-200 bg-slate-50 open:bg-white"
+          {dailyBatchReceiptSections.length > 0 ? (
+            <div className="mt-5 space-y-5">
+              {dailyBatchReceiptSections.map((section, sectionIndex) => (
+                <div
+                  key={section.dateKey}
+                  className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50/70"
                 >
-                  <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-4 py-3">
-                    <div>
-                      <p className="font-semibold text-slate-950">
-                        {group.recipient}
-                      </p>
-                      <p className="mt-1 text-xs text-slate-500">
-                        {group.items.length} item belum memiliki tanda terima
-                      </p>
+                  <div className="flex flex-col gap-3 border-b border-slate-200 bg-white px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="flex size-10 items-center justify-center rounded-lg bg-[#0A3A60] text-white shadow-sm">
+                        <CalendarDays className="size-5" aria-hidden="true" />
+                      </div>
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+                          Tanggal penerimaan
+                        </p>
+                        <h3 className="mt-0.5 font-semibold text-slate-950">
+                          {section.dateLabel}
+                        </h3>
+                      </div>
                     </div>
-                    <span className="rounded-full bg-[#0A3A60] px-3 py-1 text-xs font-semibold text-white">
-                      Pilih item
+                    <span
+                      className={[
+                        "w-fit rounded-full px-3 py-1 text-xs font-semibold",
+                        sectionIndex === 0
+                          ? "bg-emerald-50 text-emerald-700"
+                          : "bg-slate-100 text-slate-600",
+                      ].join(" ")}
+                    >
+                      {section.groups.length} PIC siap dibuat
                     </span>
-                  </summary>
+                  </div>
 
-                  <form
-                    action={createBatchReceiptAction}
-                    className="border-t border-slate-200 p-4"
-                  >
-                    <input
-                      type="hidden"
-                      name="recipient_name"
-                      value={group.recipient}
-                    />
-                    <input
-                      type="hidden"
-                      name="recipient_unit"
-                      value={group.unit}
-                    />
-                    <input type="hidden" name="return_to" value="/receipts" />
+                  <div className="grid gap-3 p-3 lg:grid-cols-2">
+                    {section.groups.map((group) => (
+                      <details
+                        key={`${section.dateKey}-${normalizeText(group.recipient)}`}
+                        className="group h-fit overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm open:border-[#0A3A60]/30"
+                      >
+                        <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-4 py-4">
+                          <div className="min-w-0">
+                            <p className="truncate font-semibold text-slate-950">
+                              {group.recipient}
+                            </p>
+                            <p className="mt-1 text-xs text-slate-500">
+                              {group.items.length} item pada tanggal ini
+                            </p>
+                          </div>
+                          <span className="shrink-0 rounded-full bg-[#0A3A60] px-3 py-1 text-xs font-semibold text-white">
+                            Buka
+                          </span>
+                        </summary>
 
-                    <div className="grid gap-2">
-                      {group.items.map((item) => (
-                        <label
-                          key={`${item.type}-${item.id}`}
-                          className="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-200 bg-white px-3 py-3 transition hover:border-[#0A3A60]/30"
+                        <form
+                          action={createBatchReceiptAction}
+                          className="border-t border-slate-200 bg-slate-50/70 p-4"
                         >
                           <input
-                            type="checkbox"
-                            name="document_ids"
-                            value={item.id}
-                            defaultChecked
-                            className="mt-0.5 size-4 accent-[#0A3A60]"
+                            type="hidden"
+                            name="recipient_name"
+                            value={group.recipient}
                           />
-                          <span className="min-w-0 flex-1">
-                            <span className="flex flex-wrap items-center gap-2">
-                              <span className="font-semibold text-slate-950">
-                                {item.agendaNumber}
-                              </span>
-                              <span className="rounded-md bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-500">
-                                {item.typeLabel}
-                              </span>
-                            </span>
-                            <span className="mt-1 block truncate text-sm text-slate-500">
-                              {item.sender} · {item.description}
-                            </span>
-                          </span>
-                        </label>
-                      ))}
-                    </div>
+                          <input
+                            type="hidden"
+                            name="recipient_unit"
+                            value={group.unit}
+                          />
+                          <input
+                            type="hidden"
+                            name="batch_date"
+                            value={section.dateKey}
+                          />
+                          <input
+                            type="hidden"
+                            name="return_to"
+                            value="/receipts"
+                          />
 
-                    <PendingSubmitButton
-                      pendingLabel="Membuat tanda terima..."
-                      className="mt-4 inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-[#0A3A60] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#082F4D]"
-                    >
-                      <Files className="size-4" aria-hidden="true" />
-                      Buat Tanda Terima Gabungan
-                    </PendingSubmitButton>
-                  </form>
-                </details>
+                          <div className="grid gap-2">
+                            {group.items.map((item) => (
+                              <label
+                                key={`${item.type}-${item.id}`}
+                                className="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-200 bg-white px-3 py-3 transition hover:border-[#0A3A60]/30"
+                              >
+                                <input
+                                  type="checkbox"
+                                  name="document_ids"
+                                  value={item.id}
+                                  defaultChecked
+                                  className="mt-0.5 size-4 accent-[#0A3A60]"
+                                />
+                                <span className="min-w-0 flex-1">
+                                  <span className="flex flex-wrap items-center gap-2">
+                                    <span className="font-semibold text-slate-950">
+                                      {item.agendaNumber}
+                                    </span>
+                                    <span className="rounded-md bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-500">
+                                      {item.typeLabel}
+                                    </span>
+                                  </span>
+                                  <span className="mt-1 block truncate text-sm text-slate-500">
+                                    {item.sender} · {item.description}
+                                  </span>
+                                </span>
+                              </label>
+                            ))}
+                          </div>
+
+                          <div className="mt-4 flex items-center gap-2 rounded-lg border border-blue-100 bg-blue-50 px-3 py-2 text-xs font-medium text-[#0A3A60]">
+                            <CalendarDays
+                              className="size-3.5 shrink-0"
+                              aria-hidden="true"
+                            />
+                            Hanya untuk {section.dateLabel}
+                          </div>
+
+                          <PendingSubmitButton
+                            pendingLabel="Membuat tanda terima..."
+                            className="mt-3 inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-[#0A3A60] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#082F4D]"
+                          >
+                            <Files className="size-4" aria-hidden="true" />
+                            Buat Tanda Terima Harian
+                          </PendingSubmitButton>
+                        </form>
+                      </details>
+                    ))}
+                  </div>
+                </div>
               ))}
             </div>
           ) : (
             <div className="mt-5 rounded-lg border border-dashed border-slate-200 bg-slate-50 px-4 py-5 text-sm text-slate-500">
-              Belum ada PIC dengan minimal dua dokumen atau invoice tanpa tanda
-              terima.
+              Belum ada PIC dengan minimal dua dokumen atau invoice pada tanggal
+              yang sama.
             </div>
           )}
         </section>
