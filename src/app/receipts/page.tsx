@@ -47,10 +47,12 @@ type ReceiptsPageProps = {
     outgoing_batch_recipient?: string;
     outgoing_batch_date?: string;
     outgoing_batch_count?: string;
+    receipt_mode?: string;
   }>;
 };
 
 type ReceiptItemType = "DOCUMENT" | "INVOICE" | "OUTGOING";
+type ReceiptMode = "incoming" | "outgoing";
 
 type RawDocument = {
   id: string;
@@ -169,11 +171,13 @@ function getPageHref({
   q,
   status,
   type,
+  mode,
 }: {
   page: number;
   q: string;
   status: ReceiptFilter;
   type: ReceiptItemType | "";
+  mode: ReceiptMode;
 }) {
   const params = new URLSearchParams();
 
@@ -187,6 +191,10 @@ function getPageHref({
 
   if (type) {
     params.set("type", type);
+  }
+
+  if (mode === "outgoing") {
+    params.set("receipt_mode", "outgoing");
   }
 
   if (page > 1) {
@@ -436,6 +444,8 @@ export default async function ReceiptsPage({
     ? (String(params.type) as ReceiptItemType)
     : "";
   const currentPage = parsePage(params.page);
+  const receiptMode: ReceiptMode =
+    params.receipt_mode === "outgoing" ? "outgoing" : "incoming";
 
   const [documentsResult, outgoingResult, picContactsResult] = await Promise.all([
     supabase
@@ -516,7 +526,15 @@ export default async function ReceiptsPage({
   const totalItems = filteredItems.length;
   const totalPages = Math.max(1, Math.ceil(totalItems / PAGE_SIZE));
   if (totalItems > 0 && currentPage > totalPages) {
-    redirect(getPageHref({ page: totalPages, q: keyword, status, type }));
+    redirect(
+      getPageHref({
+        page: totalPages,
+        q: keyword,
+        status,
+        type,
+        mode: receiptMode,
+      }),
+    );
   }
 
   const safeCurrentPage = Math.min(currentPage, totalPages);
@@ -529,6 +547,7 @@ export default async function ReceiptsPage({
           q: keyword,
           status,
           type,
+          mode: receiptMode,
         })
       : null;
   const nextHref =
@@ -538,6 +557,7 @@ export default async function ReceiptsPage({
           q: keyword,
           status,
           type,
+          mode: receiptMode,
         })
       : null;
   const hasActiveFilter = Boolean(keyword || status || type);
@@ -570,6 +590,68 @@ export default async function ReceiptsPage({
   return (
     <AppLayout>
       <div className="space-y-6">
+        <nav
+          aria-label="Jenis tanda terima harian"
+          className="grid gap-2 rounded-xl border border-slate-200 bg-slate-100 p-1.5 shadow-sm sm:grid-cols-2"
+        >
+          <LoadingLink
+            href="/receipts"
+            pendingLabel="Membuka dokumen masuk..."
+            className={[
+              "flex min-h-14 items-center gap-3 rounded-lg px-4 py-3 transition",
+              receiptMode === "incoming"
+                ? "bg-white text-[#0A3A60] shadow-sm ring-1 ring-slate-200"
+                : "text-slate-500 hover:bg-white/70 hover:text-[#0A3A60]",
+            ].join(" ")}
+          >
+            <span
+              className={[
+                "flex size-9 shrink-0 items-center justify-center rounded-lg",
+                receiptMode === "incoming"
+                  ? "bg-[#0A3A60] text-white"
+                  : "bg-slate-200 text-slate-500",
+              ].join(" ")}
+            >
+              <Inbox className="size-4" aria-hidden="true" />
+            </span>
+            <span>
+              <span className="block text-sm font-semibold">
+                Dokumen Masuk & Invoice
+              </span>
+              <span className="mt-0.5 block text-xs opacity-75">
+                Tanda terima internal per PIC
+              </span>
+            </span>
+          </LoadingLink>
+          <LoadingLink
+            href="/receipts?receipt_mode=outgoing"
+            pendingLabel="Membuka surat keluar..."
+            className={[
+              "flex min-h-14 items-center gap-3 rounded-lg px-4 py-3 transition",
+              receiptMode === "outgoing"
+                ? "bg-orange-600 text-white shadow-sm"
+                : "text-slate-500 hover:bg-orange-50 hover:text-orange-700",
+            ].join(" ")}
+          >
+            <span
+              className={[
+                "flex size-9 shrink-0 items-center justify-center rounded-lg",
+                receiptMode === "outgoing"
+                  ? "bg-white/20 text-white"
+                  : "bg-orange-100 text-orange-600",
+              ].join(" ")}
+            >
+              <Send className="size-4" aria-hidden="true" />
+            </span>
+            <span>
+              <span className="block text-sm font-semibold">Surat Keluar</span>
+              <span className="mt-0.5 block text-xs opacity-75">
+                Tanda terima pengiriman per tujuan
+              </span>
+            </span>
+          </LoadingLink>
+        </nav>
+
         <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
           <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
             <div>
@@ -697,7 +779,12 @@ export default async function ReceiptsPage({
           </div>
         ) : null}
 
-        <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+        <section
+          className={[
+            "rounded-lg border border-slate-200 bg-white p-5 shadow-sm",
+            receiptMode === "incoming" ? "block" : "hidden",
+          ].join(" ")}
+        >
           <div className="flex items-start gap-3">
             <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-[#0A3A60]/10 text-[#0A3A60]">
               <Users className="size-5" aria-hidden="true" />
@@ -876,7 +963,12 @@ export default async function ReceiptsPage({
           )}
         </section>
 
-        <section className="overflow-hidden rounded-xl border border-orange-200 bg-[linear-gradient(135deg,#fff7ed_0%,#ffffff_52%,#fffbeb_100%)] shadow-sm">
+        <section
+          className={[
+            "overflow-hidden rounded-xl border border-orange-200 bg-[linear-gradient(135deg,#fff7ed_0%,#ffffff_52%,#fffbeb_100%)] shadow-sm",
+            receiptMode === "outgoing" ? "block" : "hidden",
+          ].join(" ")}
+        >
           <div className="flex flex-col gap-4 border-b border-orange-200 p-5 sm:flex-row sm:items-start sm:justify-between">
             <div className="flex items-start gap-3">
               <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-orange-600 text-white shadow-sm">
@@ -1078,6 +1170,11 @@ export default async function ReceiptsPage({
               action="/receipts"
               className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_220px_220px_auto_auto]"
             >
+              <input
+                type="hidden"
+                name="receipt_mode"
+                value={receiptMode}
+              />
               <label className="relative block">
                 <span className="sr-only">Cari tanda terima</span>
                 <Search
@@ -1131,7 +1228,11 @@ export default async function ReceiptsPage({
 
               {hasActiveFilter ? (
                 <LoadingLink
-                  href="/receipts"
+                  href={
+                    receiptMode === "outgoing"
+                      ? "/receipts?receipt_mode=outgoing"
+                      : "/receipts"
+                  }
                   pendingLabel="Reset..."
                   className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 transition hover:border-[#0A3A60]/30 hover:bg-slate-50 hover:text-[#0A3A60]"
                 >

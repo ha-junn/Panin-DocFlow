@@ -288,6 +288,7 @@ export async function createBatchReceiptAction(formData: FormData) {
 
   revalidatePath("/receipts");
   const successParams = new URLSearchParams({
+    receipt_mode: "incoming",
     batch_created: batch.token,
     batch_recipient: recipientName,
     batch_date: batchDate,
@@ -451,6 +452,7 @@ export async function createOutgoingBatchReceiptAction(formData: FormData) {
 
   revalidatePath("/receipts");
   const successParams = new URLSearchParams({
+    receipt_mode: "outgoing",
     outgoing_batch_created: batch.token,
     outgoing_batch_recipient: recipientName,
     outgoing_batch_date: batchDate,
