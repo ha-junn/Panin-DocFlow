@@ -27,6 +27,10 @@ function isReceiptTargetType(value: string): value is ReceiptTargetType {
   return ["DOCUMENT", "INVOICE", "OUTGOING"].includes(value);
 }
 
+function normalizeRecipient(value: string | null | undefined) {
+  return String(value ?? "").trim().toLocaleLowerCase("id-ID");
+}
+
 export async function createReceiptRequestAction(formData: FormData) {
   const supabase = await createSupabaseServerClient();
   const {
@@ -119,11 +123,11 @@ export async function createBatchReceiptAction(formData: FormData) {
     ),
   );
 
-  if (!recipientName || !batchDate || documentIds.length < 2) {
+  if (!recipientName || !batchDate || documentIds.length < 1) {
     redirect(
       withMessage(
         returnTo,
-        "Pilih minimal dua dokumen atau invoice untuk tanda terima gabungan.",
+        "Pilih minimal satu dokumen atau invoice untuk tanda terima harian.",
       ),
     );
   }
@@ -132,7 +136,9 @@ export async function createBatchReceiptAction(formData: FormData) {
     await Promise.all([
       supabase
         .from("documents")
-        .select("id, received_at")
+        .select(
+          "id, type, received_at, recipient_name, invoice_details(internal_pic)",
+        )
         .in("id", documentIds),
       supabase
         .from("receipt_requests")
@@ -159,6 +165,32 @@ export async function createBatchReceiptAction(formData: FormData) {
       withMessage(
         returnTo,
         "Tanda terima gabungan gagal divalidasi. Pastikan SQL batch sudah dijalankan.",
+      ),
+    );
+  }
+
+  const selectedRecipients = new Set(
+    (documents ?? []).map((document) => {
+      const invoiceDetails = Array.isArray(document.invoice_details)
+        ? document.invoice_details[0]
+        : document.invoice_details;
+      const documentRecipient =
+        document.type === "INVOICE"
+          ? invoiceDetails?.internal_pic || document.recipient_name
+          : document.recipient_name;
+
+      return normalizeRecipient(documentRecipient);
+    }),
+  );
+
+  if (
+    selectedRecipients.size !== 1 ||
+    !selectedRecipients.has(normalizeRecipient(recipientName))
+  ) {
+    redirect(
+      withMessage(
+        returnTo,
+        "Tanda terima harian hanya boleh berisi dokumen untuk PIC yang sama.",
       ),
     );
   }

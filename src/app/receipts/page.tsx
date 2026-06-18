@@ -332,7 +332,6 @@ function buildDailyBatchReceiptSections(items: ReceiptListItem[]) {
       dateKey,
       dateLabel: formatDate(dateKey),
       groups: Array.from(groups.values())
-        .filter((group) => group.items.length >= 2)
         .sort(
           (first, second) =>
             second.items.length - first.items.length ||
@@ -546,8 +545,8 @@ export default async function ReceiptsPage({
                 Tanda Terima Harian per PIC
               </h2>
               <p className="mt-1 text-sm leading-6 text-slate-500">
-                Dokumen otomatis dipisahkan berdasarkan tanggal penerimaan.
-                Tanggal lama tidak akan tercampur dengan tanggal hari ini.
+                Semua PIC ditampilkan, termasuk yang hanya memiliki satu item.
+                Dokumen tetap dipisahkan berdasarkan tanggal penerimaan.
               </p>
             </div>
           </div>
@@ -581,7 +580,7 @@ export default async function ReceiptsPage({
                           : "bg-slate-100 text-slate-600",
                       ].join(" ")}
                     >
-                      {section.groups.length} PIC siap dibuat
+                      {section.groups.length} PIC tersedia
                     </span>
                   </div>
 
@@ -684,8 +683,8 @@ export default async function ReceiptsPage({
             </div>
           ) : (
             <div className="mt-5 rounded-lg border border-dashed border-slate-200 bg-slate-50 px-4 py-5 text-sm text-slate-500">
-              Belum ada PIC dengan minimal dua dokumen atau invoice pada tanggal
-              yang sama.
+              Belum ada PIC dengan dokumen atau invoice yang siap dibuatkan
+              tanda terima harian.
             </div>
           )}
         </section>
