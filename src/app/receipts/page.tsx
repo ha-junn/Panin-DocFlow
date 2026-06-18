@@ -4,15 +4,20 @@ import {
   CheckCircle2,
   Clock3,
   FileText,
+  Files,
   Inbox,
   ReceiptText,
   RotateCcw,
   Search,
   Send,
+  Users,
 } from "lucide-react";
+import { createBatchReceiptAction } from "@/app/receipts/actions";
 import { AppLayout } from "@/components/AppLayout";
+import { CopyReceiptLinkButton } from "@/components/CopyReceiptLinkButton";
 import { LoadingLink } from "@/components/LoadingLink";
 import { PaginationControls } from "@/components/PaginationControls";
+import { PendingSubmitButton } from "@/components/PendingSubmitButton";
 import {
   fetchDocumentReceiptStatusMap,
   fetchOutgoingReceiptStatusMap,
@@ -28,6 +33,8 @@ type ReceiptsPageProps = {
     page?: string;
     status?: string;
     type?: string;
+    message?: string;
+    batch_created?: string;
   }>;
 };
 
@@ -85,6 +92,12 @@ type ReceiptListItem = {
   description: string;
   href: string;
   receipt?: ReceiptStatusSummary;
+};
+
+type BatchReceiptGroup = {
+  recipient: string;
+  unit: string;
+  items: ReceiptListItem[];
 };
 
 const PAGE_SIZE = 20;
@@ -268,6 +281,46 @@ function itemMatchesKeyword(item: ReceiptListItem, keyword: string) {
   return haystack.includes(normalizeText(keyword));
 }
 
+function buildBatchReceiptGroups(items: ReceiptListItem[]) {
+  const groups = new Map<string, BatchReceiptGroup>();
+
+  for (const item of items) {
+    if (
+      item.type === "OUTGOING" ||
+      item.receipt ||
+      !item.recipient ||
+      item.recipient === "-"
+    ) {
+      continue;
+    }
+
+    const key = normalizeText(item.recipient);
+    const existing = groups.get(key);
+
+    if (existing) {
+      existing.items.push(item);
+      if (!existing.unit.includes(item.department)) {
+        existing.unit = "Beberapa departemen";
+      }
+      continue;
+    }
+
+    groups.set(key, {
+      recipient: item.recipient,
+      unit: item.department,
+      items: [item],
+    });
+  }
+
+  return Array.from(groups.values())
+    .filter((group) => group.items.length >= 2)
+    .sort(
+      (first, second) =>
+        second.items.length - first.items.length ||
+        first.recipient.localeCompare(second.recipient, "id"),
+    );
+}
+
 export default async function ReceiptsPage({
   searchParams,
 }: ReceiptsPageProps) {
@@ -340,6 +393,7 @@ export default async function ReceiptsPage({
     (first, second) =>
       new Date(second.sortDate).getTime() - new Date(first.sortDate).getTime(),
   );
+  const batchReceiptGroups = buildBatchReceiptGroups(allItems);
 
   const baseFilteredItems = allItems.filter(
     (item) =>
@@ -381,6 +435,8 @@ export default async function ReceiptsPage({
       : null;
   const hasActiveFilter = Boolean(keyword || status || type);
   const hasQueryError = documentsResult.error || outgoingResult.error;
+  const createdBatchToken = String(params.batch_created ?? "").trim();
+  const message = String(params.message ?? "").trim();
 
   return (
     <AppLayout>
@@ -436,6 +492,129 @@ export default async function ReceiptsPage({
             invoice, surat keluar, dan receipt_requests tersedia di Supabase.
           </div>
         ) : null}
+
+        {message ? (
+          <div
+            className={[
+              "rounded-lg border px-5 py-4 text-sm font-semibold",
+              createdBatchToken
+                ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                : "border-amber-200 bg-amber-50 text-amber-800",
+            ].join(" ")}
+          >
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <span>{message}</span>
+              {createdBatchToken ? (
+                <CopyReceiptLinkButton
+                  href={`/receipt-batch/${createdBatchToken}`}
+                  compact
+                />
+              ) : null}
+            </div>
+          </div>
+        ) : null}
+
+        <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="flex items-start gap-3">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-[#0A3A60]/10 text-[#0A3A60]">
+              <Users className="size-5" aria-hidden="true" />
+            </div>
+            <div>
+              <h2 className="text-base font-semibold text-slate-950">
+                Tanda Terima Gabungan per PIC
+              </h2>
+              <p className="mt-1 text-sm leading-6 text-slate-500">
+                Gabungkan beberapa dokumen atau invoice untuk PIC yang sama,
+                lalu kirim satu link dan minta satu tanda tangan.
+              </p>
+            </div>
+          </div>
+
+          {batchReceiptGroups.length > 0 ? (
+            <div className="mt-5 grid gap-3">
+              {batchReceiptGroups.map((group) => (
+                <details
+                  key={normalizeText(group.recipient)}
+                  className="group rounded-lg border border-slate-200 bg-slate-50 open:bg-white"
+                >
+                  <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-4 py-3">
+                    <div>
+                      <p className="font-semibold text-slate-950">
+                        {group.recipient}
+                      </p>
+                      <p className="mt-1 text-xs text-slate-500">
+                        {group.items.length} item belum memiliki tanda terima
+                      </p>
+                    </div>
+                    <span className="rounded-full bg-[#0A3A60] px-3 py-1 text-xs font-semibold text-white">
+                      Pilih item
+                    </span>
+                  </summary>
+
+                  <form
+                    action={createBatchReceiptAction}
+                    className="border-t border-slate-200 p-4"
+                  >
+                    <input
+                      type="hidden"
+                      name="recipient_name"
+                      value={group.recipient}
+                    />
+                    <input
+                      type="hidden"
+                      name="recipient_unit"
+                      value={group.unit}
+                    />
+                    <input type="hidden" name="return_to" value="/receipts" />
+
+                    <div className="grid gap-2">
+                      {group.items.map((item) => (
+                        <label
+                          key={`${item.type}-${item.id}`}
+                          className="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-200 bg-white px-3 py-3 transition hover:border-[#0A3A60]/30"
+                        >
+                          <input
+                            type="checkbox"
+                            name="document_ids"
+                            value={item.id}
+                            defaultChecked
+                            className="mt-0.5 size-4 accent-[#0A3A60]"
+                          />
+                          <span className="min-w-0 flex-1">
+                            <span className="flex flex-wrap items-center gap-2">
+                              <span className="font-semibold text-slate-950">
+                                {item.agendaNumber}
+                              </span>
+                              <span className="rounded-md bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-500">
+                                {item.typeLabel}
+                              </span>
+                            </span>
+                            <span className="mt-1 block truncate text-sm text-slate-500">
+                              {item.sender} · {item.description}
+                            </span>
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+
+                    <PendingSubmitButton
+                      pendingLabel="Membuat tanda terima..."
+                      className="mt-4 inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-[#0A3A60] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#082F4D]"
+                    >
+                      <Files className="size-4" aria-hidden="true" />
+                      Buat Tanda Terima Gabungan
+                    </PendingSubmitButton>
+                  </form>
+                </details>
+              ))}
+            </div>
+          ) : (
+            <div className="mt-5 rounded-lg border border-dashed border-slate-200 bg-slate-50 px-4 py-5 text-sm text-slate-500">
+              Belum ada PIC dengan minimal dua dokumen atau invoice tanpa tanda
+              terima.
+            </div>
+          )}
+        </section>
 
         <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
           <div className="border-b border-slate-200 p-5">
@@ -562,7 +741,16 @@ export default async function ReceiptsPage({
                         {item.category}
                       </td>
                       <td className="px-5 py-4">
-                        <ReceiptStatusPill receipt={item.receipt} />
+                        <div className="flex flex-col items-start gap-2">
+                          <ReceiptStatusPill receipt={item.receipt} />
+                          {item.receipt?.scope === "BATCH" &&
+                          item.receipt.token ? (
+                            <CopyReceiptLinkButton
+                              href={`/receipt-batch/${item.receipt.token}`}
+                              compact
+                            />
+                          ) : null}
+                        </div>
                       </td>
                       <td className="px-5 py-4 text-right">
                         <LoadingLink

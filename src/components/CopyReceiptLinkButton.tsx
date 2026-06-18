@@ -5,9 +5,13 @@ import { Check, Copy } from "lucide-react";
 
 type CopyReceiptLinkButtonProps = {
   href: string;
+  compact?: boolean;
 };
 
-export function CopyReceiptLinkButton({ href }: CopyReceiptLinkButtonProps) {
+export function CopyReceiptLinkButton({
+  href,
+  compact = false,
+}: CopyReceiptLinkButtonProps) {
   const [isCopied, setIsCopied] = useState(false);
 
   useEffect(() => {
@@ -29,7 +33,10 @@ export function CopyReceiptLinkButton({ href }: CopyReceiptLinkButtonProps) {
     <button
       type="button"
       onClick={copyLink}
-      className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 transition hover:border-[#0A3A60]/30 hover:bg-slate-50"
+      className={[
+        "inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 transition hover:border-[#0A3A60]/30 hover:bg-slate-50",
+        compact ? "w-auto" : "w-full",
+      ].join(" ")}
     >
       {isCopied ? (
         <Check className="size-4 text-emerald-600" aria-hidden="true" />
