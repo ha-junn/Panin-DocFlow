@@ -48,12 +48,6 @@ const navigationItems: NavigationItem[] = [
     badgeKey: null,
   },
   {
-    label: "Pencarian",
-    href: "/search",
-    icon: Search,
-    badgeKey: null,
-  },
-  {
     label: "Dokumen",
     href: "/documents",
     icon: FileText,
@@ -87,6 +81,12 @@ const navigationItems: NavigationItem[] = [
     label: "Pengaturan",
     href: "/settings/departments",
     icon: Settings,
+    badgeKey: null,
+  },
+  {
+    label: "Pencarian",
+    href: "/search",
+    icon: Search,
     badgeKey: null,
   },
 ];
