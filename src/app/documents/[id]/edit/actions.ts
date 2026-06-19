@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { uppercaseText } from "@/lib/text";
 
 type DbDocumentType = "LETTER" | "INVOICE";
 
@@ -11,7 +12,7 @@ function formString(formData: FormData, key: string) {
 }
 
 function optionalFormString(formData: FormData, key: string) {
-  const value = formString(formData, key);
+  const value = uppercaseText(formString(formData, key));
   return value || null;
 }
 
@@ -55,10 +56,10 @@ export async function updateDocumentAction(formData: FormData) {
   const documentId = formString(formData, "document_id");
   const documentType = formString(formData, "document_type") as DbDocumentType;
   const receivedAt = formString(formData, "received_at");
-  const senderName = formString(formData, "sender_name");
-  const recipientName = formString(formData, "recipient_name");
+  const senderName = uppercaseText(formString(formData, "sender_name"));
+  const recipientName = uppercaseText(formString(formData, "recipient_name"));
   const departmentId = formString(formData, "department_id");
-  const subject = formString(formData, "subject");
+  const subject = uppercaseText(formString(formData, "subject"));
   const notes = optionalFormString(formData, "notes");
   const letterNumber = optionalFormString(formData, "letter_number");
   const letterDate = optionalFormString(formData, "letter_date");

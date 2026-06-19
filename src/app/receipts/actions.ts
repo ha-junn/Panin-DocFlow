@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { uppercaseText } from "@/lib/text";
 
 type ReceiptTargetType = "DOCUMENT" | "INVOICE" | "OUTGOING";
 type IncomingReceiptKind = "DOCUMENT" | "INVOICE";
@@ -529,9 +530,9 @@ export async function createOutgoingBatchReceiptAction(formData: FormData) {
 export async function confirmReceiptAction(formData: FormData) {
   const supabase = await createSupabaseServerClient();
   const token = formString(formData, "token");
-  const recipientName = formString(formData, "recipient_name");
-  const recipientUnit = formString(formData, "recipient_unit");
-  const recipientNote = formString(formData, "recipient_note");
+  const recipientName = uppercaseText(formString(formData, "recipient_name"));
+  const recipientUnit = uppercaseText(formString(formData, "recipient_unit"));
+  const recipientNote = uppercaseText(formString(formData, "recipient_note"));
   const signatureData = formString(formData, "signature_data");
 
   if (!token) {
@@ -570,9 +571,9 @@ export async function confirmReceiptAction(formData: FormData) {
 export async function confirmBatchReceiptAction(formData: FormData) {
   const supabase = await createSupabaseServerClient();
   const token = formString(formData, "token");
-  const confirmedName = formString(formData, "recipient_name");
-  const confirmedUnit = formString(formData, "recipient_unit");
-  const confirmedNote = formString(formData, "recipient_note");
+  const confirmedName = uppercaseText(formString(formData, "recipient_name"));
+  const confirmedUnit = uppercaseText(formString(formData, "recipient_unit"));
+  const confirmedNote = uppercaseText(formString(formData, "recipient_note"));
   const signatureData = formString(formData, "signature_data");
 
   if (!token) {
@@ -612,9 +613,9 @@ export async function confirmBatchReceiptAction(formData: FormData) {
 export async function confirmOutgoingBatchReceiptAction(formData: FormData) {
   const supabase = await createSupabaseServerClient();
   const token = formString(formData, "token");
-  const confirmedName = formString(formData, "recipient_name");
-  const confirmedUnit = formString(formData, "recipient_unit");
-  const confirmedNote = formString(formData, "recipient_note");
+  const confirmedName = uppercaseText(formString(formData, "recipient_name"));
+  const confirmedUnit = uppercaseText(formString(formData, "recipient_unit"));
+  const confirmedNote = uppercaseText(formString(formData, "recipient_note"));
   const signatureData = formString(formData, "signature_data");
 
   if (!token) {

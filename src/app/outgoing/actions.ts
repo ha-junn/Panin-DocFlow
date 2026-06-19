@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { uppercaseText } from "@/lib/text";
 
 const MAX_ATTACHMENT_SIZE = 10 * 1024 * 1024;
 const ALLOWED_ATTACHMENT_TYPES = new Set([
@@ -70,17 +71,13 @@ function dateToIso(value: string) {
 }
 
 function collectOutgoingRows(formData: FormData) {
-  const letterNumbers = formValues(formData, "letter_number");
-  const destinations = formValues(formData, "destination_name");
-  const attentionList = formValues(formData, "attention_to");
-  const subjects = formValues(formData, "subject");
+  const letterNumbers = formValues(formData, "letter_number").map(uppercaseText);
+  const destinations = formValues(formData, "destination_name").map(uppercaseText);
   const confidentialValues = formValues(formData, "confidential");
-  const notes = formValues(formData, "row_notes");
+  const notes = formValues(formData, "row_notes").map(uppercaseText);
   const maxRows = Math.max(
     letterNumbers.length,
     destinations.length,
-    attentionList.length,
-    subjects.length,
     confidentialValues.length,
     notes.length,
   );
@@ -91,17 +88,15 @@ function collectOutgoingRows(formData: FormData) {
     const row = {
       letterNumber: letterNumbers[index] || null,
       destinationName: destinations[index] || "",
-      attentionTo: attentionList[index] || null,
-      subject: subjects[index] || null,
+      attentionTo: null,
+      subject: null,
       confidential: confidentialValues[index] === "true",
       notes: notes[index] || null,
     };
 
     const hasAnyValue = Boolean(
-      row.letterNumber ||
+        row.letterNumber ||
         row.destinationName ||
-        row.attentionTo ||
-        row.subject ||
         row.confidential ||
         row.notes,
     );
@@ -127,9 +122,9 @@ export async function createOutgoingLettersAction(formData: FormData) {
   }
 
   const sentAt = formString(formData, "sent_at");
-  const senderStaff = formString(formData, "sender_staff");
+  const senderStaff = uppercaseText(formString(formData, "sender_staff"));
   const senderDepartment = formString(formData, "sender_department");
-  const batchNotes = formString(formData, "batch_notes");
+  const batchNotes = uppercaseText(formString(formData, "batch_notes"));
   const attachment = formData.get("attachment");
   const rows = collectOutgoingRows(formData);
 

@@ -41,6 +41,12 @@ input {
   font: inherit;
 }
 
+input[type="text"],
+input:not([type]),
+textarea {
+  text-transform: uppercase;
+}
+
 .topbar-marquee {
   mask-image: linear-gradient(
     90deg,

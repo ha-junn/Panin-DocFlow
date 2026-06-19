@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { uppercaseText } from "@/lib/text";
 
 type CategoryType = "LETTER" | "INVOICE" | "BOTH";
 
@@ -44,7 +45,7 @@ function getCategoryType(formData: FormData) {
 
 export async function createCategoryAction(formData: FormData) {
   const supabase = await getAuthenticatedSupabase();
-  const name = formString(formData, "name");
+  const name = uppercaseText(formString(formData, "name"));
   const type = getCategoryType(formData);
 
   if (!name || !type) {
@@ -67,7 +68,7 @@ export async function createCategoryAction(formData: FormData) {
 export async function updateCategoryAction(formData: FormData) {
   const supabase = await getAuthenticatedSupabase();
   const id = formString(formData, "id");
-  const name = formString(formData, "name");
+  const name = uppercaseText(formString(formData, "name"));
   const type = getCategoryType(formData);
 
   if (!id || !name || !type) {

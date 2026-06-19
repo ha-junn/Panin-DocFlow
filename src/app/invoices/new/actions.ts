@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { uppercaseText } from "@/lib/text";
 
 const MAX_ATTACHMENT_SIZE = 10 * 1024 * 1024;
 const ALLOWED_ATTACHMENT_TYPES = new Set([
@@ -82,14 +83,14 @@ export async function createInvoiceBatchAction(formData: FormData) {
   }
 
   const receivedAt = formString(formData, "received_at");
-  const vendorName = formString(formData, "vendor_name");
+  const vendorName = uppercaseText(formString(formData, "vendor_name"));
   const departmentId = formString(formData, "department_id");
   const categoryId = formString(formData, "category_id");
-  const internalPic = formString(formData, "internal_pic");
-  const notes = formString(formData, "notes");
+  const internalPic = uppercaseText(formString(formData, "internal_pic"));
+  const notes = uppercaseText(formString(formData, "notes"));
   const invoiceNumbers = formData
     .getAll("invoice_number")
-    .map((value) => String(value).trim());
+    .map((value) => uppercaseText(String(value)));
   const amounts = formData
     .getAll("amount")
     .map((value) => parseAmount(String(value).trim()));
@@ -189,8 +190,8 @@ export async function createInvoiceBatchAction(formData: FormData) {
 
   for (const item of itemsToCreate) {
     const subject = item.invoiceNumber
-      ? `Invoice ${item.invoiceNumber} - ${vendorName}`
-      : `Invoice masuk - ${vendorName}`;
+      ? `INVOICE ${item.invoiceNumber} - ${vendorName}`
+      : `INVOICE MASUK - ${vendorName}`;
 
     const { data: document, error: documentError } = await supabase
       .from("documents")

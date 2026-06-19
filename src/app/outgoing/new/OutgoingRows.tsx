@@ -78,36 +78,12 @@ export function OutgoingRows() {
 
             <label className="block">
               <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
-                Tujuan
+                Tujuan / U.P
               </span>
               <input
                 name="destination_name"
                 type="text"
-                placeholder="Cabang, kantor, atau penerima tujuan"
-                className="mt-1.5 h-11 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#0A3A60] focus:ring-4 focus:ring-[#0A3A60]/10"
-              />
-            </label>
-
-            <label className="block">
-              <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
-                U.p / penerima
-              </span>
-              <input
-                name="attention_to"
-                type="text"
-                placeholder="Contoh: Bpk. Jan Prawira Wijaya"
-                className="mt-1.5 h-11 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#0A3A60] focus:ring-4 focus:ring-[#0A3A60]/10"
-              />
-            </label>
-
-            <label className="block">
-              <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
-                Perihal opsional
-              </span>
-              <input
-                name="subject"
-                type="text"
-                placeholder="Ringkasan isi surat"
+                placeholder="Cabang, kantor, atau nama penerima"
                 className="mt-1.5 h-11 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#0A3A60] focus:ring-4 focus:ring-[#0A3A60]/10"
               />
             </label>

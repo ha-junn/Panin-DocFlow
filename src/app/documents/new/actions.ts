@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { uppercaseText } from "@/lib/text";
 
 const MAX_ATTACHMENT_SIZE = 10 * 1024 * 1024;
 const ALLOWED_ATTACHMENT_TYPES = new Set([
@@ -86,20 +87,20 @@ export async function createLetterAction(formData: FormData) {
   }
 
   const receivedAt = requiredString(formData, "received_at");
-  const senderName = requiredString(formData, "sender_name");
-  const letterNumber = requiredString(formData, "letter_number");
+  const senderName = uppercaseText(requiredString(formData, "sender_name"));
+  const letterNumber = uppercaseText(requiredString(formData, "letter_number"));
   const letterDate = requiredString(formData, "letter_date");
-  const recipientName = requiredString(formData, "recipient_name");
+  const recipientName = uppercaseText(requiredString(formData, "recipient_name"));
   const departmentId = requiredString(formData, "department_id");
-  const subject = requiredString(formData, "subject");
+  const subject = uppercaseText(requiredString(formData, "subject"));
   const employeeNames = formData
     .getAll("employee_name")
-    .map((value) => String(value).trim());
+    .map((value) => uppercaseText(String(value)));
   const amounts = formData
     .getAll("document_amount")
     .map((value) => parseOptionalRupiah(String(value).trim()));
   const categoryId = requiredString(formData, "category_id");
-  const notes = requiredString(formData, "notes");
+  const notes = uppercaseText(requiredString(formData, "notes"));
   const attachment = formData.get("attachment");
 
   if (
@@ -185,7 +186,7 @@ export async function createLetterAction(formData: FormData) {
     sender_name: senderName,
     recipient_name: recipientName,
     department_id: departmentId,
-    subject: subject || "Tanpa perihal",
+    subject: subject || "TANPA PERIHAL",
     employee_name: item.employeeName,
     amount: item.amount,
     category_id: categoryId,

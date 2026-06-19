@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { uppercaseText } from "@/lib/text";
 
 type BackupStatus = "BACKED_UP" | "VERIFIED" | "CLEANED";
 
@@ -88,8 +89,9 @@ export async function createBackupHistoryAction(formData: FormData) {
   const { supabase, userId } = await getCurrentUserId();
   const month = formString(formData, "month");
   const status = normalizeStatus(formString(formData, "status"));
-  const backupFileName = formString(formData, "backup_file_name") || null;
-  const notes = formString(formData, "notes") || null;
+  const backupFileName =
+    uppercaseText(formString(formData, "backup_file_name")) || null;
+  const notes = uppercaseText(formString(formData, "notes")) || null;
 
   if (!isValidMonth(month)) {
     redirect(

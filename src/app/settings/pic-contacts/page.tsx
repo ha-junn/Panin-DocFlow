@@ -188,8 +188,8 @@ export default async function PicContactsSettingsPage({
                   defaultValue=""
                 >
                   <option value="">Dokumen / Invoice Masuk</option>
-                  <option value="Ekspedisi" />
-                  <option value="Mailing Room" />
+                  <option value="EKSPEDISI">Ekspedisi</option>
+                  <option value="MAILING ROOM">Mailing Room</option>
                 </select>
                 <span className="mt-2 block text-xs leading-5 text-slate-400">
                   Pilih unit pengiriman agar PIC tersedia pada tanda terima
@@ -256,10 +256,10 @@ export default async function PicContactsSettingsPage({
                         className="h-10 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm text-slate-900 outline-none transition focus:border-[#0A3A60] focus:bg-white focus:ring-4 focus:ring-[#0A3A60]/10"
                       >
                         <option value="">Dokumen / Invoice</option>
-                        <option value="Ekspedisi">Ekspedisi</option>
-                        <option value="Mailing Room">Mailing Room</option>
+                        <option value="EKSPEDISI">Ekspedisi</option>
+                        <option value="MAILING ROOM">Mailing Room</option>
                         {contact.department &&
-                        !["Ekspedisi", "Mailing Room"].includes(
+                        !["EKSPEDISI", "MAILING ROOM"].includes(
                           contact.department,
                         ) ? (
                           <option value={contact.department}>

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { uppercaseText } from "@/lib/text";
 
 function formString(formData: FormData, key: string) {
   return String(formData.get(key) ?? "").trim();
@@ -36,7 +37,7 @@ function revalidateDepartmentViews() {
 
 export async function createDepartmentAction(formData: FormData) {
   const supabase = await getAuthenticatedSupabase();
-  const name = formString(formData, "name");
+  const name = uppercaseText(formString(formData, "name"));
   const code = formString(formData, "code").toUpperCase();
 
   if (!name || !code) {
@@ -57,7 +58,7 @@ export async function createDepartmentAction(formData: FormData) {
 export async function updateDepartmentAction(formData: FormData) {
   const supabase = await getAuthenticatedSupabase();
   const id = formString(formData, "id");
-  const name = formString(formData, "name");
+  const name = uppercaseText(formString(formData, "name"));
   const code = formString(formData, "code").toUpperCase();
 
   if (!id || !name || !code) {

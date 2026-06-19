@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { uppercaseText } from "@/lib/text";
 
 function formString(formData: FormData, key: string) {
   return String(formData.get(key) ?? "").trim();
@@ -46,11 +47,11 @@ function revalidatePicViews() {
 
 export async function createPicContactAction(formData: FormData) {
   const supabase = await getAuthenticatedSupabase();
-  const name = formString(formData, "name");
+  const name = uppercaseText(formString(formData, "name"));
   const whatsappNumber = normalizeWhatsappNumber(
     formString(formData, "whatsapp_number"),
   );
-  const department = formString(formData, "department");
+  const department = uppercaseText(formString(formData, "department"));
 
   if (!name || whatsappNumber.length < 10) {
     redirect(settingsPath("Nama PIC dan nomor WhatsApp yang valid wajib diisi."));
@@ -78,11 +79,11 @@ export async function createPicContactAction(formData: FormData) {
 export async function updatePicContactAction(formData: FormData) {
   const supabase = await getAuthenticatedSupabase();
   const id = formString(formData, "id");
-  const name = formString(formData, "name");
+  const name = uppercaseText(formString(formData, "name"));
   const whatsappNumber = normalizeWhatsappNumber(
     formString(formData, "whatsapp_number"),
   );
-  const department = formString(formData, "department");
+  const department = uppercaseText(formString(formData, "department"));
   const active = formData.get("active") === "on";
 
   if (!id || !name || whatsappNumber.length < 10) {

@@ -66,7 +66,7 @@ export default async function NewOutgoingPage({
               <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
                 Isi staff pengirim satu kali, lalu tambahkan beberapa tujuan
                 surat sekaligus. Nomor surat boleh dikosongkan jika amplop tidak
-                memiliki nomor.
+                memiliki nomor. Semua teks otomatis disimpan dalam huruf kapital.
               </p>
             </div>
 
