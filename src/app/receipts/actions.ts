@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 type ReceiptTargetType = "DOCUMENT" | "INVOICE" | "OUTGOING";
+const validOutgoingDeliverySections = new Set(["Ekspedisi", "Mailing Room"]);
 
 function formString(formData: FormData, key: string) {
   return String(formData.get(key) ?? "").trim();
@@ -309,8 +310,7 @@ export async function createOutgoingBatchReceiptAction(formData: FormData) {
   }
 
   const returnTo = normalizeReturnTo(formString(formData, "return_to"));
-  const recipientName = formString(formData, "recipient_name");
-  const recipientUnit = formString(formData, "recipient_unit");
+  const deliverySection = formString(formData, "delivery_section");
   const batchDate = formString(formData, "batch_date");
   const outgoingIds = Array.from(
     new Set(
@@ -321,7 +321,11 @@ export async function createOutgoingBatchReceiptAction(formData: FormData) {
     ),
   );
 
-  if (!recipientName || !batchDate || outgoingIds.length < 1) {
+  if (
+    !validOutgoingDeliverySections.has(deliverySection) ||
+    !batchDate ||
+    outgoingIds.length < 1
+  ) {
     redirect(
       withMessage(
         returnTo,
@@ -334,7 +338,7 @@ export async function createOutgoingBatchReceiptAction(formData: FormData) {
     await Promise.all([
       supabase
         .from("outgoing_letters")
-        .select("id, sent_at, destination_name, attention_to")
+        .select("id, sent_at")
         .in("id", outgoingIds),
       supabase
         .from("receipt_requests")
@@ -365,26 +369,9 @@ export async function createOutgoingBatchReceiptAction(formData: FormData) {
     );
   }
 
-  const selectedRecipients = new Set(
-    (letters ?? []).map((letter) =>
-      normalizeRecipient(letter.attention_to || letter.destination_name),
-    ),
-  );
   const selectedDates = new Set(
     (letters ?? []).map((letter) => String(letter.sent_at ?? "").slice(0, 10)),
   );
-
-  if (
-    selectedRecipients.size !== 1 ||
-    !selectedRecipients.has(normalizeRecipient(recipientName))
-  ) {
-    redirect(
-      withMessage(
-        returnTo,
-        "Tanda terima surat keluar hanya boleh berisi surat untuk penerima yang sama.",
-      ),
-    );
-  }
 
   if (
     selectedDates.size !== 1 ||
@@ -411,8 +398,8 @@ export async function createOutgoingBatchReceiptAction(formData: FormData) {
   const { data: batch, error: batchError } = await supabase
     .from("outgoing_receipt_batches")
     .insert({
-      recipient_name: recipientName,
-      recipient_unit: recipientUnit || null,
+      recipient_name: deliverySection,
+      recipient_unit: "Bagian Pengiriman",
       created_by: user.id,
     })
     .select("id, token")
@@ -454,10 +441,10 @@ export async function createOutgoingBatchReceiptAction(formData: FormData) {
   const successParams = new URLSearchParams({
     receipt_mode: "outgoing",
     outgoing_batch_created: batch.token,
-    outgoing_batch_recipient: recipientName,
+    outgoing_batch_recipient: deliverySection,
     outgoing_batch_date: batchDate,
     outgoing_batch_count: String(outgoingIds.length),
-    message: `Tanda terima surat keluar untuk ${recipientName} berhasil dibuat.`,
+    message: `Tanda terima surat keluar untuk ${deliverySection} berhasil dibuat.`,
   });
   redirect(`/receipts?${successParams.toString()}`);
 }

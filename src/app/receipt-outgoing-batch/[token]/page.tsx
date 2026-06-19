@@ -150,7 +150,7 @@ export default async function OutgoingBatchReceiptPage({
                 {items.length} surat keluar
               </span>
               <h2 className="mt-4 text-2xl font-semibold">
-                Untuk {batch.recipient_name}
+                Diserahkan ke {batch.recipient_name}
               </h2>
               <p className="mt-2 text-sm text-slate-500">
                 {batch.recipient_unit || "Tujuan belum ditentukan"}
@@ -269,7 +269,7 @@ export default async function OutgoingBatchReceiptPage({
                 <input
                   name="recipient_name"
                   required
-                  defaultValue={batch.recipient_name}
+                  placeholder="Nama petugas penerima"
                   className="h-12 w-full rounded-lg border border-orange-200 bg-white px-3 text-sm outline-none transition focus:border-orange-500 focus:ring-4 focus:ring-orange-100"
                 />
               </label>
@@ -277,7 +277,8 @@ export default async function OutgoingBatchReceiptPage({
                 Unit / tujuan
                 <input
                   name="recipient_unit"
-                  defaultValue={batch.recipient_unit || ""}
+                  defaultValue={batch.recipient_name}
+                  readOnly
                   className="h-12 w-full rounded-lg border border-orange-200 bg-white px-3 text-sm outline-none transition focus:border-orange-500 focus:ring-4 focus:ring-orange-100"
                 />
               </label>

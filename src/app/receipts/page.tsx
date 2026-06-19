@@ -11,7 +11,9 @@ import {
   RotateCcw,
   Search,
   Send,
+  Truck,
   Users,
+  Warehouse,
 } from "lucide-react";
 import {
   createBatchReceiptAction,
@@ -128,6 +130,12 @@ type DailyBatchReceiptSection = {
   groups: BatchReceiptGroup[];
 };
 
+type DailyOutgoingReceiptSection = {
+  dateKey: string;
+  dateLabel: string;
+  items: ReceiptListItem[];
+};
+
 const PAGE_SIZE = 20;
 const MAX_ROWS_PER_SOURCE = 700;
 
@@ -138,6 +146,26 @@ const dateFormatter = new Intl.DateTimeFormat("id-ID", {
 });
 
 const validTypeFilters = new Set(["DOCUMENT", "INVOICE", "OUTGOING"]);
+const outgoingDeliverySections = [
+  {
+    name: "Ekspedisi",
+    description: "Penyerahan ke petugas ekspedisi atau kurir.",
+    icon: Truck,
+    cardClass: "border-orange-200 bg-orange-50/60",
+    iconClass: "bg-orange-600 text-white",
+    buttonClass: "bg-orange-600 hover:bg-orange-700",
+    accentClass: "accent-orange-600",
+  },
+  {
+    name: "Mailing Room",
+    description: "Penyerahan ke petugas mailing room.",
+    icon: Warehouse,
+    cardClass: "border-sky-200 bg-sky-50/60",
+    iconClass: "bg-sky-700 text-white",
+    buttonClass: "bg-sky-700 hover:bg-sky-800",
+    accentClass: "accent-sky-700",
+  },
+] as const;
 
 function parsePage(value: string | undefined) {
   const page = Number(value);
@@ -372,54 +400,29 @@ function buildDailyBatchReceiptSections(items: ReceiptListItem[]) {
 }
 
 function buildOutgoingDailyBatchReceiptSections(items: ReceiptListItem[]) {
-  const dailyGroups = new Map<string, Map<string, BatchReceiptGroup>>();
+  const dailyItems = new Map<string, ReceiptListItem[]>();
 
   for (const item of items) {
-    const recipient = item.batchRecipient || item.recipient;
-
-    if (
-      item.type !== "OUTGOING" ||
-      item.receipt ||
-      !recipient ||
-      recipient === "-"
-    ) {
+    if (item.type !== "OUTGOING" || item.receipt) {
       continue;
     }
 
     const dateKey = getDateKey(item.date);
-    const recipientKey = normalizeText(recipient);
-    const groupsForDate =
-      dailyGroups.get(dateKey) ?? new Map<string, BatchReceiptGroup>();
-    const existing = groupsForDate.get(recipientKey);
-    const unit = item.batchUnit || item.recipient;
-
-    if (existing) {
-      existing.items.push(item);
-      if (!existing.unit.includes(unit)) {
-        existing.unit = "Beberapa tujuan";
-      }
-      continue;
-    }
-
-    groupsForDate.set(recipientKey, {
-      recipient,
-      unit,
-      items: [item],
-    });
-    dailyGroups.set(dateKey, groupsForDate);
+    const itemsForDate = dailyItems.get(dateKey) ?? [];
+    itemsForDate.push(item);
+    dailyItems.set(dateKey, itemsForDate);
   }
 
-  return Array.from(dailyGroups.entries())
-    .map(([dateKey, groups]): DailyBatchReceiptSection => ({
+  return Array.from(dailyItems.entries())
+    .map(([dateKey, outgoingItems]): DailyOutgoingReceiptSection => ({
       dateKey,
       dateLabel: formatDate(dateKey),
-      groups: Array.from(groups.values()).sort(
+      items: outgoingItems.sort(
         (first, second) =>
-          second.items.length - first.items.length ||
-          first.recipient.localeCompare(second.recipient, "id"),
+          new Date(second.sortDate).getTime() -
+          new Date(first.sortDate).getTime(),
       ),
     }))
-    .filter((section) => section.groups.length > 0)
     .sort((first, second) => second.dateKey.localeCompare(first.dateKey));
 }
 
@@ -984,8 +987,8 @@ export default async function ReceiptsPage({
                   </span>
                 </div>
                 <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-500">
-                  Surat dikelompokkan berdasarkan tanggal kirim dan nama U.p.
-                  Jika U.p. kosong, sistem menggunakan nama tujuan.
+                  Pilih bagian Ekspedisi atau Mailing Room, lalu centang surat
+                  mana saja yang diserahkan pada tanggal tersebut.
                 </p>
               </div>
             </div>
@@ -1027,28 +1030,44 @@ export default async function ReceiptsPage({
                           : "bg-orange-100 text-orange-700",
                       ].join(" ")}
                     >
-                      {section.groups.length} penerima tersedia
+                      {section.items.length} surat tersedia
                     </span>
                   </div>
 
                   <div className="grid gap-3 p-3 lg:grid-cols-2">
-                    {section.groups.map((group) => {
+                    {outgoingDeliverySections.map((deliverySection) => {
+                      const DeliveryIcon = deliverySection.icon;
                       const hasWhatsapp = picContactMap.has(
-                        normalizeText(group.recipient),
+                        normalizeText(deliverySection.name),
                       );
 
                       return (
-                        <details
-                          key={`${section.dateKey}-${normalizeText(group.recipient)}`}
-                          className="group h-fit overflow-hidden rounded-xl border border-orange-100 bg-white shadow-sm open:border-orange-300"
+                        <form
+                          key={`${section.dateKey}-${deliverySection.name}`}
+                          action={createOutgoingBatchReceiptAction}
+                          className={[
+                            "h-fit overflow-hidden rounded-xl border shadow-sm",
+                            deliverySection.cardClass,
+                          ].join(" ")}
                         >
-                          <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-4 py-4">
-                            <div className="min-w-0">
-                              <p className="truncate font-semibold text-slate-950">
-                                {group.recipient}
+                          <div className="flex items-start gap-3 border-b border-white/80 px-4 py-4">
+                            <div
+                              className={[
+                                "flex size-10 shrink-0 items-center justify-center rounded-lg shadow-sm",
+                                deliverySection.iconClass,
+                              ].join(" ")}
+                            >
+                              <DeliveryIcon
+                                className="size-5"
+                                aria-hidden="true"
+                              />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="font-semibold text-slate-950">
+                                {deliverySection.name}
                               </p>
-                              <p className="mt-1 truncate text-xs text-slate-500">
-                                {group.unit} · {group.items.length} surat
+                              <p className="mt-1 text-xs leading-5 text-slate-500">
+                                {deliverySection.description}
                               </p>
                               <p
                                 className={[
@@ -1063,24 +1082,13 @@ export default async function ReceiptsPage({
                                   : "Nomor WhatsApp belum diatur"}
                               </p>
                             </div>
-                            <span className="shrink-0 rounded-full bg-orange-600 px-3 py-1 text-xs font-semibold text-white">
-                              Buka
-                            </span>
-                          </summary>
+                          </div>
 
-                          <form
-                            action={createOutgoingBatchReceiptAction}
-                            className="border-t border-orange-100 bg-orange-50/40 p-4"
-                          >
+                          <div className="p-4">
                             <input
                               type="hidden"
-                              name="recipient_name"
-                              value={group.recipient}
-                            />
-                            <input
-                              type="hidden"
-                              name="recipient_unit"
-                              value={group.unit}
+                              name="delivery_section"
+                              value={deliverySection.name}
                             />
                             <input
                               type="hidden"
@@ -1090,21 +1098,23 @@ export default async function ReceiptsPage({
                             <input
                               type="hidden"
                               name="return_to"
-                              value="/receipts"
+                              value="/receipts?receipt_mode=outgoing"
                             />
 
                             <div className="grid gap-2">
-                              {group.items.map((item) => (
+                              {section.items.map((item) => (
                                 <label
                                   key={`outgoing-${item.id}`}
-                                  className="flex cursor-pointer items-start gap-3 rounded-lg border border-orange-100 bg-white px-3 py-3 transition hover:border-orange-300"
+                                  className="flex cursor-pointer items-start gap-3 rounded-lg border border-white bg-white px-3 py-3 transition hover:border-slate-300"
                                 >
                                   <input
                                     type="checkbox"
                                     name="outgoing_ids"
                                     value={item.id}
-                                    defaultChecked
-                                    className="mt-0.5 size-4 accent-orange-600"
+                                    className={[
+                                      "mt-0.5 size-4",
+                                      deliverySection.accentClass,
+                                    ].join(" ")}
                                   />
                                   <span className="min-w-0 flex-1">
                                     <span className="flex flex-wrap items-center gap-2">
@@ -1115,8 +1125,11 @@ export default async function ReceiptsPage({
                                         Surat Keluar
                                       </span>
                                     </span>
-                                    <span className="mt-1 block truncate text-sm text-slate-500">
-                                      {item.sender} · {item.description}
+                                    <span className="mt-1 block text-sm text-slate-500">
+                                      {item.sender} → {item.recipient}
+                                    </span>
+                                    <span className="mt-1 block truncate text-xs text-slate-400">
+                                      {item.description}
                                     </span>
                                   </span>
                                 </label>
@@ -1133,12 +1146,18 @@ export default async function ReceiptsPage({
 
                             <PendingSubmitButton
                               pendingLabel="Membuat tanda terima..."
-                              className="mt-3 inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-orange-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-orange-700"
+                              className={[
+                                "mt-3 inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg px-4 text-sm font-semibold text-white shadow-sm transition",
+                                deliverySection.buttonClass,
+                              ].join(" ")}
                             >
-                              <Send className="size-4" aria-hidden="true" />
+                              <DeliveryIcon
+                                className="size-4"
+                                aria-hidden="true"
+                              />
                               {hasWhatsapp
                                 ? "Buat & Siapkan WhatsApp"
-                                : "Buat Tanda Terima Surat"}
+                                : `Buat untuk ${deliverySection.name}`}
                             </PendingSubmitButton>
                             {!hasWhatsapp ? (
                               <LoadingLink
@@ -1146,11 +1165,11 @@ export default async function ReceiptsPage({
                                 pendingLabel="Membuka..."
                                 className="mt-2 inline-flex h-9 w-full items-center justify-center rounded-lg border border-orange-200 bg-white px-3 text-xs font-semibold text-orange-700"
                               >
-                                Atur nomor WhatsApp penerima
+                                Atur nomor WhatsApp {deliverySection.name}
                               </LoadingLink>
                             ) : null}
-                          </form>
-                        </details>
+                          </div>
+                        </form>
                       );
                     })}
                   </div>
