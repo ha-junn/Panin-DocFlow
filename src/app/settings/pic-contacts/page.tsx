@@ -76,7 +76,8 @@ export default async function PicContactsSettingsPage({
               </h1>
               <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
                 Simpan nomor WhatsApp PIC agar link tanda terima harian dapat
-                dikirim dengan pesan otomatis.
+                dikirim dengan pesan otomatis. Untuk surat keluar, tambahkan
+                semua petugas shift dan pilih unit Ekspedisi atau Mailing Room.
               </p>
             </div>
 
@@ -145,7 +146,7 @@ export default async function PicContactsSettingsPage({
                   Tambah PIC
                 </h2>
                 <p className="mt-1 text-sm text-slate-500">
-                  Nama harus sama dengan PIC pada invoice/dokumen.
+                  Satu petugas dibuat satu kali dengan nomor WhatsApp masing-masing.
                 </p>
               </div>
             </div>
@@ -179,13 +180,21 @@ export default async function PicContactsSettingsPage({
               </label>
               <label className="block">
                 <span className="text-sm font-medium text-slate-700">
-                  Departemen / unit
+                  Digunakan untuk
                 </span>
-                <input
+                <select
                   name="department"
-                  placeholder="Opsional"
                   className="mt-2 h-10 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm text-slate-900 outline-none transition focus:border-[#0A3A60] focus:bg-white focus:ring-4 focus:ring-[#0A3A60]/10"
-                />
+                  defaultValue=""
+                >
+                  <option value="">Dokumen / Invoice Masuk</option>
+                  <option value="Ekspedisi" />
+                  <option value="Mailing Room" />
+                </select>
+                <span className="mt-2 block text-xs leading-5 text-slate-400">
+                  Pilih unit pengiriman agar PIC tersedia pada tanda terima
+                  surat keluar.
+                </span>
               </label>
 
               <PendingSubmitButton
@@ -204,7 +213,8 @@ export default async function PicContactsSettingsPage({
                 Daftar PIC & Nomor WhatsApp
               </p>
               <p className="mt-1 text-sm text-slate-500">
-                PIC aktif akan dicocokkan otomatis pada halaman Tanda Terima.
+                PIC aktif dikelompokkan berdasarkan unit dan dapat dipilih
+                sesuai petugas shift yang sedang bekerja.
               </p>
             </div>
 
@@ -240,12 +250,23 @@ export default async function PicContactsSettingsPage({
                         inputMode="tel"
                         className="h-10 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm text-slate-900 outline-none transition focus:border-[#25D366] focus:bg-white focus:ring-4 focus:ring-[#25D366]/10"
                       />
-                      <input
+                      <select
                         name="department"
                         defaultValue={contact.department ?? ""}
-                        placeholder="Unit"
                         className="h-10 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm text-slate-900 outline-none transition focus:border-[#0A3A60] focus:bg-white focus:ring-4 focus:ring-[#0A3A60]/10"
-                      />
+                      >
+                        <option value="">Dokumen / Invoice</option>
+                        <option value="Ekspedisi">Ekspedisi</option>
+                        <option value="Mailing Room">Mailing Room</option>
+                        {contact.department &&
+                        !["Ekspedisi", "Mailing Room"].includes(
+                          contact.department,
+                        ) ? (
+                          <option value={contact.department}>
+                            {contact.department}
+                          </option>
+                        ) : null}
+                      </select>
                       <label className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-600">
                         <input
                           type="checkbox"

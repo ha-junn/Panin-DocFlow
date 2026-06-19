@@ -47,6 +47,7 @@ type ReceiptsPageProps = {
     batch_count?: string;
     outgoing_batch_created?: string;
     outgoing_batch_recipient?: string;
+    outgoing_batch_section?: string;
     outgoing_batch_date?: string;
     outgoing_batch_count?: string;
     receipt_mode?: string;
@@ -119,8 +120,10 @@ type BatchReceiptGroup = {
 };
 
 type PicContact = {
+  id: string;
   name: string;
   whatsapp_number: string;
+  department: string | null;
   active: boolean;
 };
 
@@ -178,6 +181,21 @@ function normalizeSearch(value: string | undefined) {
 
 function normalizeText(value: string) {
   return value.toLowerCase().trim();
+}
+
+function getDeliveryPicContacts(
+  contacts: PicContact[],
+  deliverySection: string,
+) {
+  const normalizedSection = normalizeText(deliverySection);
+
+  return contacts
+    .filter(
+      (contact) =>
+        normalizeText(contact.department ?? "") === normalizedSection ||
+        normalizeText(contact.name) === normalizedSection,
+    )
+    .sort((first, second) => first.name.localeCompare(second.name, "id-ID"));
 }
 
 function formatDate(value: string) {
@@ -479,7 +497,7 @@ export default async function ReceiptsPage({
       .limit(MAX_ROWS_PER_SOURCE),
     supabase
       .from("pic_contacts")
-      .select("name, whatsapp_number, active")
+      .select("id, name, whatsapp_number, department, active")
       .eq("active", true),
   ]);
 
@@ -1037,9 +1055,11 @@ export default async function ReceiptsPage({
                   <div className="grid gap-3 p-3 lg:grid-cols-2">
                     {outgoingDeliverySections.map((deliverySection) => {
                       const DeliveryIcon = deliverySection.icon;
-                      const hasWhatsapp = picContactMap.has(
-                        normalizeText(deliverySection.name),
+                      const deliveryPicContacts = getDeliveryPicContacts(
+                        picContacts,
+                        deliverySection.name,
                       );
+                      const hasPicContacts = deliveryPicContacts.length > 0;
 
                       return (
                         <form
@@ -1072,14 +1092,14 @@ export default async function ReceiptsPage({
                               <p
                                 className={[
                                   "mt-1 text-xs font-medium",
-                                  hasWhatsapp
+                                  hasPicContacts
                                     ? "text-emerald-600"
                                     : "text-orange-600",
                                 ].join(" ")}
                               >
-                                {hasWhatsapp
-                                  ? "Nomor WhatsApp tersedia"
-                                  : "Nomor WhatsApp belum diatur"}
+                                {hasPicContacts
+                                  ? `${deliveryPicContacts.length} PIC aktif tersedia`
+                                  : "PIC dan nomor WhatsApp belum diatur"}
                               </p>
                             </div>
                           </div>
@@ -1100,6 +1120,33 @@ export default async function ReceiptsPage({
                               name="return_to"
                               value="/receipts?receipt_mode=outgoing"
                             />
+
+                            {hasPicContacts ? (
+                              <label className="mb-4 block">
+                                <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                                  PIC yang sedang bertugas
+                                </span>
+                                <select
+                                  name="pic_contact_id"
+                                  required
+                                  defaultValue=""
+                                  className="mt-2 h-11 w-full rounded-lg border border-white bg-white px-3 text-sm font-semibold text-slate-900 outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-100"
+                                >
+                                  <option value="" disabled>
+                                    Pilih PIC {deliverySection.name}
+                                  </option>
+                                  {deliveryPicContacts.map((contact) => (
+                                    <option key={contact.id} value={contact.id}>
+                                      {contact.name} · +
+                                      {contact.whatsapp_number}
+                                    </option>
+                                  ))}
+                                </select>
+                                <span className="mt-1.5 block text-xs text-slate-500">
+                                  Link WhatsApp dikirim ke PIC yang dipilih.
+                                </span>
+                              </label>
+                            ) : null}
 
                             <div className="grid gap-2">
                               {section.items.map((item) => (
@@ -1144,30 +1191,29 @@ export default async function ReceiptsPage({
                               Hanya pengiriman {section.dateLabel}
                             </div>
 
-                            <PendingSubmitButton
-                              pendingLabel="Membuat tanda terima..."
-                              className={[
-                                "mt-3 inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg px-4 text-sm font-semibold text-white shadow-sm transition",
-                                deliverySection.buttonClass,
-                              ].join(" ")}
-                            >
-                              <DeliveryIcon
-                                className="size-4"
-                                aria-hidden="true"
-                              />
-                              {hasWhatsapp
-                                ? "Buat & Siapkan WhatsApp"
-                                : `Buat untuk ${deliverySection.name}`}
-                            </PendingSubmitButton>
-                            {!hasWhatsapp ? (
+                            {hasPicContacts ? (
+                              <PendingSubmitButton
+                                pendingLabel="Membuat tanda terima..."
+                                className={[
+                                  "mt-3 inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg px-4 text-sm font-semibold text-white shadow-sm transition",
+                                  deliverySection.buttonClass,
+                                ].join(" ")}
+                              >
+                                <DeliveryIcon
+                                  className="size-4"
+                                  aria-hidden="true"
+                                />
+                                Buat & Siapkan WhatsApp
+                              </PendingSubmitButton>
+                            ) : (
                               <LoadingLink
                                 href="/settings/pic-contacts"
                                 pendingLabel="Membuka..."
-                                className="mt-2 inline-flex h-9 w-full items-center justify-center rounded-lg border border-orange-200 bg-white px-3 text-xs font-semibold text-orange-700"
+                                className="mt-3 inline-flex h-11 w-full items-center justify-center rounded-lg border border-orange-200 bg-white px-3 text-sm font-semibold text-orange-700"
                               >
-                                Atur nomor WhatsApp {deliverySection.name}
+                                Tambah PIC {deliverySection.name}
                               </LoadingLink>
-                            ) : null}
+                            )}
                           </div>
                         </form>
                       );

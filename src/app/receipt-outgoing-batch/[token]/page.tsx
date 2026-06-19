@@ -277,7 +277,7 @@ export default async function OutgoingBatchReceiptPage({
                 Unit / tujuan
                 <input
                   name="recipient_unit"
-                  defaultValue={batch.recipient_name}
+                  defaultValue={batch.recipient_unit ?? ""}
                   readOnly
                   className="h-12 w-full rounded-lg border border-orange-200 bg-white px-3 text-sm outline-none transition focus:border-orange-500 focus:ring-4 focus:ring-orange-100"
                 />

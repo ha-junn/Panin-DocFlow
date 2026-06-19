@@ -32,6 +32,18 @@ function normalizeRecipient(value: string | null | undefined) {
   return String(value ?? "").trim().toLocaleLowerCase("id-ID");
 }
 
+function contactMatchesDeliverySection(
+  contact: { name: string; department: string | null },
+  deliverySection: string,
+) {
+  const normalizedSection = normalizeRecipient(deliverySection);
+
+  return (
+    normalizeRecipient(contact.department) === normalizedSection ||
+    normalizeRecipient(contact.name) === normalizedSection
+  );
+}
+
 function isMissingRelationError(error: { code?: string } | null) {
   return Boolean(error && ["42P01", "PGRST205"].includes(error.code ?? ""));
 }
@@ -311,6 +323,7 @@ export async function createOutgoingBatchReceiptAction(formData: FormData) {
 
   const returnTo = normalizeReturnTo(formString(formData, "return_to"));
   const deliverySection = formString(formData, "delivery_section");
+  const picContactId = formString(formData, "pic_contact_id");
   const batchDate = formString(formData, "batch_date");
   const outgoingIds = Array.from(
     new Set(
@@ -323,6 +336,7 @@ export async function createOutgoingBatchReceiptAction(formData: FormData) {
 
   if (
     !validOutgoingDeliverySections.has(deliverySection) ||
+    !picContactId ||
     !batchDate ||
     outgoingIds.length < 1
   ) {
@@ -330,6 +344,31 @@ export async function createOutgoingBatchReceiptAction(formData: FormData) {
       withMessage(
         returnTo,
         "Pilih minimal satu surat keluar untuk tanda terima harian.",
+      ),
+    );
+  }
+
+  const { data: selectedContact, error: selectedContactError } = await supabase
+    .from("pic_contacts")
+    .select("id, name, whatsapp_number, department, active")
+    .eq("id", picContactId)
+    .eq("active", true)
+    .maybeSingle();
+
+  if (
+    selectedContactError ||
+    !selectedContact ||
+    !contactMatchesDeliverySection(selectedContact, deliverySection)
+  ) {
+    console.error("Failed to validate outgoing delivery PIC", {
+      selectedContactError,
+      picContactId,
+      deliverySection,
+    });
+    redirect(
+      withMessage(
+        returnTo,
+        `Pilih PIC ${deliverySection} yang aktif sebelum membuat tanda terima.`,
       ),
     );
   }
@@ -398,8 +437,8 @@ export async function createOutgoingBatchReceiptAction(formData: FormData) {
   const { data: batch, error: batchError } = await supabase
     .from("outgoing_receipt_batches")
     .insert({
-      recipient_name: deliverySection,
-      recipient_unit: "Bagian Pengiriman",
+      recipient_name: selectedContact.name,
+      recipient_unit: deliverySection,
       created_by: user.id,
     })
     .select("id, token")
@@ -441,10 +480,11 @@ export async function createOutgoingBatchReceiptAction(formData: FormData) {
   const successParams = new URLSearchParams({
     receipt_mode: "outgoing",
     outgoing_batch_created: batch.token,
-    outgoing_batch_recipient: deliverySection,
+    outgoing_batch_recipient: selectedContact.name,
+    outgoing_batch_section: deliverySection,
     outgoing_batch_date: batchDate,
     outgoing_batch_count: String(outgoingIds.length),
-    message: `Tanda terima surat keluar untuk ${deliverySection} berhasil dibuat.`,
+    message: `Tanda terima ${deliverySection} untuk PIC ${selectedContact.name} berhasil dibuat.`,
   });
   redirect(`/receipts?${successParams.toString()}`);
 }
