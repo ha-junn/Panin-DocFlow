@@ -31,6 +31,7 @@ import {
   type ReceiptStatusSummary,
 } from "@/lib/receipts";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { formatOutgoingDestination } from "@/lib/text";
 
 type ReceiptsPageProps = {
   searchParams: Promise<{
@@ -363,10 +364,15 @@ function buildOutgoingItems(
     date: letter.sent_at,
     sortDate: letter.created_at || letter.sent_at,
     sender: letter.sender_staff,
-    recipient: letter.destination_name,
+    recipient: formatOutgoingDestination(
+      letter.destination_name,
+      letter.attention_to,
+    ),
     department: letter.sender_department,
     category: letter.confidential ? "Confidential" : "Umum",
-    description: letter.attention_to ? `u.p. ${letter.attention_to}` : "-",
+    description: letter.letter_number
+      ? `Nomor surat ${letter.letter_number}`
+      : "-",
     href: `/outgoing/${letter.id}`,
     receipt: receiptStatusMap.get(letter.id),
   }));

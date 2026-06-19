@@ -16,6 +16,7 @@ import { CopyReceiptLinkButton } from "@/components/CopyReceiptLinkButton";
 import { LoadingLink } from "@/components/LoadingLink";
 import { ReceiptPanel, type ReceiptSummary } from "@/components/ReceiptPanel";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { formatOutgoingDestination } from "@/lib/text";
 import { deleteOutgoingLetterAction } from "../actions";
 
 type OutgoingDetailPageProps = {
@@ -263,7 +264,10 @@ export default async function OutgoingDetailPage({
                 {letter.agenda_number}
               </h1>
               <p className="mt-2 text-sm text-slate-500">
-                {letter.destination_name}
+                {formatOutgoingDestination(
+                  letter.destination_name,
+                  letter.attention_to,
+                )}
               </p>
             </div>
 
@@ -312,9 +316,13 @@ export default async function OutgoingDetailPage({
                       : "Human Resource Management (HRM)"
                   }
                 />
-                <DetailItem label="Tujuan" value={letter.destination_name} />
-                <DetailItem label="U.p / penerima" value={letter.attention_to || "-"} />
-                <DetailItem label="Perihal" value={letter.subject || "-"} />
+                <DetailItem
+                  label="Tujuan / U.P"
+                  value={formatOutgoingDestination(
+                    letter.destination_name,
+                    letter.attention_to,
+                  )}
+                />
                 <DetailItem
                   label="Sifat"
                   value={

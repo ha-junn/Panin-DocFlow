@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { formatOutgoingDestination } from "@/lib/text";
 
 type ReceiptExportRow = {
   id: string;
@@ -153,9 +154,12 @@ export async function GET() {
       document?.agenda_number ?? outgoingLetter?.agenda_number ?? "",
       document?.sender_name ?? outgoingLetter?.sender_staff ?? "",
       document?.recipient_name ??
-        outgoingLetter?.attention_to ??
-        outgoingLetter?.destination_name ??
-        "",
+        (outgoingLetter
+          ? formatOutgoingDestination(
+              outgoingLetter.destination_name,
+              outgoingLetter.attention_to,
+            )
+          : ""),
       document?.department?.name ?? outgoingLetter?.sender_department ?? "",
       document?.subject ?? outgoingLetter?.subject ?? "",
       receipt.status === "CONFIRMED" ? "Sudah diterima" : "Menunggu",

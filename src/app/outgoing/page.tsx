@@ -16,6 +16,7 @@ import { PaginationControls } from "@/components/PaginationControls";
 import { ReceiptStatusBadge } from "@/components/ReceiptStatusBadge";
 import { fetchOutgoingReceiptStatusMap } from "@/lib/receipts";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { formatOutgoingDestination } from "@/lib/text";
 import { deleteOutgoingLetterAction } from "./actions";
 
 type OutgoingPageProps = {
@@ -250,7 +251,7 @@ export default async function OutgoingPage({ searchParams }: OutgoingPageProps) 
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[1080px] border-separate border-spacing-0 text-left">
+              <table className="w-full min-w-[980px] border-separate border-spacing-0 text-left">
                 <thead>
                   <tr className="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500">
                     <th className="border-b border-slate-200 px-5 py-3">
@@ -269,10 +270,7 @@ export default async function OutgoingPage({ searchParams }: OutgoingPageProps) 
                       Nomor Surat
                     </th>
                     <th className="border-b border-slate-200 px-5 py-3">
-                      Tujuan
-                    </th>
-                    <th className="border-b border-slate-200 px-5 py-3">
-                      U.p
+                      Tujuan / U.P
                     </th>
                     <th className="border-b border-slate-200 px-5 py-3">
                       Sifat
@@ -307,11 +305,11 @@ export default async function OutgoingPage({ searchParams }: OutgoingPageProps) 
                         <td className="border-b border-slate-100 px-5 py-4 text-sm text-slate-600">
                           {letter.letter_number || "-"}
                         </td>
-                        <td className="border-b border-slate-100 px-5 py-4 text-sm font-semibold text-slate-950">
-                          {letter.destination_name}
-                        </td>
-                        <td className="border-b border-slate-100 px-5 py-4 text-sm text-slate-600">
-                          {letter.attention_to || "-"}
+                        <td className="max-w-64 border-b border-slate-100 px-5 py-4 text-sm font-semibold text-slate-950">
+                          {formatOutgoingDestination(
+                            letter.destination_name,
+                            letter.attention_to,
+                          )}
                         </td>
                         <td className="border-b border-slate-100 px-5 py-4">
                           {letter.confidential ? (
@@ -354,7 +352,7 @@ export default async function OutgoingPage({ searchParams }: OutgoingPageProps) 
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={10} className="px-5 py-14 text-center">
+                      <td colSpan={9} className="px-5 py-14 text-center">
                         <div className="mx-auto flex size-12 items-center justify-center rounded-lg bg-[#0A3A60]/10 text-[#0A3A60]">
                           <Send className="size-6" aria-hidden="true" />
                         </div>

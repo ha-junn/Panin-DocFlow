@@ -10,6 +10,7 @@ import { confirmOutgoingBatchReceiptAction } from "@/app/receipts/actions";
 import { PendingSubmitButton } from "@/components/PendingSubmitButton";
 import { PrintButton } from "@/components/PrintButton";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { formatOutgoingDestination } from "@/lib/text";
 import { SignaturePad } from "../../receipt/[token]/SignaturePad";
 
 type OutgoingBatchReceiptPageProps = {
@@ -187,7 +188,10 @@ export default async function OutgoingBatchReceiptPage({
                     </p>
                     <p className="mt-1 text-xs text-slate-400">
                       {item.sender_staff} · {item.sender_department} ·{" "}
-                      {item.destination_name}
+                      {formatOutgoingDestination(
+                        item.destination_name,
+                        item.attention_to,
+                      )}
                     </p>
                   </div>
                   <span className="h-fit rounded-md bg-orange-50 px-2.5 py-1 text-xs font-semibold text-orange-700">
