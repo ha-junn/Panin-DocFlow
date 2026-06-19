@@ -50,15 +50,36 @@ type OutgoingBatchReceipt = {
     | {
         token: string;
         status: "PENDING" | "CONFIRMED";
+        recipient_name: string;
+        confirmed_name: string | null;
+        created_at: string;
         confirmed_at: string | null;
       }
     | {
         token: string;
         status: "PENDING" | "CONFIRMED";
+        recipient_name: string;
+        confirmed_name: string | null;
+        created_at: string;
         confirmed_at: string | null;
       }[]
     | null;
 };
+
+type TimelineActivity = {
+  id: string;
+  message: string;
+  createdAt: string;
+  actor: string;
+};
+
+const dateTimeFormatter = new Intl.DateTimeFormat("id-ID", {
+  day: "2-digit",
+  month: "long",
+  year: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+});
 
 const dateFormatter = new Intl.DateTimeFormat("id-ID", {
   day: "2-digit",
@@ -68,6 +89,10 @@ const dateFormatter = new Intl.DateTimeFormat("id-ID", {
 
 function formatDate(value: string) {
   return dateFormatter.format(new Date(value));
+}
+
+function formatDateTime(value: string) {
+  return dateTimeFormatter.format(new Date(value));
 }
 
 function DetailItem({
@@ -121,7 +146,7 @@ export default async function OutgoingDetailPage({
       supabase
         .from("outgoing_receipt_batch_items")
         .select(
-          "batch:outgoing_receipt_batches(token, status, confirmed_at)",
+          "batch:outgoing_receipt_batches(token, status, recipient_name, confirmed_name, created_at, confirmed_at)",
         )
         .eq("outgoing_letter_id", id)
         .maybeSingle(),
@@ -138,6 +163,72 @@ export default async function OutgoingDetailPage({
   const outgoingBatch = Array.isArray(batchRelation)
     ? batchRelation[0]
     : batchRelation;
+  const timeline: TimelineActivity[] = [
+    {
+      id: `created-${letter.id}`,
+      message: `Surat keluar ${letter.agenda_number} dibuat.`,
+      createdAt: letter.created_at,
+      actor: letter.sender_staff,
+    },
+  ];
+
+  if (
+    new Date(letter.updated_at).getTime() >
+    new Date(letter.created_at).getTime() + 1000
+  ) {
+    timeline.push({
+      id: `updated-${letter.id}`,
+      message: `Data surat keluar ${letter.agenda_number} diperbarui.`,
+      createdAt: letter.updated_at,
+      actor: "Sistem",
+    });
+  }
+
+  if (receiptSummary) {
+    timeline.push({
+      id: `receipt-created-${receiptSummary.id}`,
+      message: "Link tanda terima surat keluar dibuat.",
+      createdAt: receiptSummary.created_at,
+      actor: "Sistem",
+    });
+
+    if (receiptSummary.confirmed_at) {
+      timeline.push({
+        id: `receipt-confirmed-${receiptSummary.id}`,
+        message: `Tanda terima dikonfirmasi oleh ${
+          receiptSummary.recipient_name || "penerima"
+        }.`,
+        createdAt: receiptSummary.confirmed_at,
+        actor: receiptSummary.recipient_name || "Sistem",
+      });
+    }
+  }
+
+  if (outgoingBatch) {
+    timeline.push({
+      id: `batch-created-${outgoingBatch.token}`,
+      message: `Surat dimasukkan ke tanda terima ${outgoingBatch.recipient_name}.`,
+      createdAt: outgoingBatch.created_at,
+      actor: "Sistem",
+    });
+
+    if (outgoingBatch.confirmed_at) {
+      timeline.push({
+        id: `batch-confirmed-${outgoingBatch.token}`,
+        message: `Tanda terima ${outgoingBatch.recipient_name} dikonfirmasi oleh ${
+          outgoingBatch.confirmed_name || "petugas penerima"
+        }.`,
+        createdAt: outgoingBatch.confirmed_at,
+        actor: outgoingBatch.confirmed_name || "Sistem",
+      });
+    }
+  }
+
+  timeline.sort(
+    (first, second) =>
+      new Date(second.createdAt).getTime() -
+      new Date(first.createdAt).getTime(),
+  );
   let signedAttachmentUrl: string | null = null;
 
   if (letter.attachment_url) {
@@ -306,6 +397,34 @@ export default async function OutgoingDetailPage({
                   Surat keluar ini belum memiliki lampiran.
                 </p>
               )}
+            </div>
+
+            <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="flex items-center gap-2">
+                <CalendarClock
+                  className="size-5 text-[#0A3A60]"
+                  aria-hidden="true"
+                />
+                <h2 className="text-sm font-semibold text-slate-950">
+                  Timeline Aktivitas
+                </h2>
+              </div>
+
+              <div className="mt-5 space-y-4">
+                {timeline.map((activity) => (
+                  <div
+                    key={activity.id}
+                    className="border-l-2 border-slate-200 pl-4"
+                  >
+                    <p className="text-sm font-semibold text-slate-900">
+                      {activity.message}
+                    </p>
+                    <p className="mt-1 text-xs text-slate-500">
+                      {formatDateTime(activity.createdAt)} oleh {activity.actor}
+                    </p>
+                  </div>
+                ))}
+              </div>
             </div>
 
             <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
