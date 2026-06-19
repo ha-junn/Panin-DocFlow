@@ -5,14 +5,12 @@ import {
   CheckCircle2,
   Clock3,
   FileText,
-  Files,
   Inbox,
   ReceiptText,
   RotateCcw,
   Search,
   Send,
   Truck,
-  Users,
   Warehouse,
 } from "lucide-react";
 import {
@@ -108,15 +106,7 @@ type ReceiptListItem = {
   category: string;
   description: string;
   href: string;
-  batchRecipient?: string;
-  batchUnit?: string;
   receipt?: ReceiptStatusSummary;
-};
-
-type BatchReceiptGroup = {
-  recipient: string;
-  unit: string;
-  items: ReceiptListItem[];
 };
 
 type PicContact = {
@@ -130,7 +120,8 @@ type PicContact = {
 type DailyBatchReceiptSection = {
   dateKey: string;
   dateLabel: string;
-  groups: BatchReceiptGroup[];
+  documentItems: ReceiptListItem[];
+  invoiceItems: ReceiptListItem[];
 };
 
 type DailyOutgoingReceiptSection = {
@@ -149,6 +140,30 @@ const dateFormatter = new Intl.DateTimeFormat("id-ID", {
 });
 
 const validTypeFilters = new Set(["DOCUMENT", "INVOICE", "OUTGOING"]);
+const incomingReceiptTypes = [
+  {
+    kind: "DOCUMENT",
+    name: "Dokumen Masuk",
+    description: "Surat dan dokumen yang diterima untuk PIC internal.",
+    icon: FileText,
+    cardClass: "border-sky-200 bg-sky-50/60",
+    iconClass: "bg-[#0A3A60] text-white",
+    buttonClass: "bg-[#0A3A60] hover:bg-[#082F4D]",
+    accentClass: "accent-[#0A3A60]",
+    badgeClass: "bg-sky-100 text-[#0A3A60]",
+  },
+  {
+    kind: "INVOICE",
+    name: "Invoice Masuk",
+    description: "Tagihan vendor yang diterima untuk proses internal.",
+    icon: ReceiptText,
+    cardClass: "border-red-200 bg-red-50/60",
+    iconClass: "bg-red-600 text-white",
+    buttonClass: "bg-red-600 hover:bg-red-700",
+    accentClass: "accent-red-600",
+    badgeClass: "bg-red-100 text-red-700",
+  },
+] as const;
 const outgoingDeliverySections = [
   {
     name: "Ekspedisi",
@@ -194,6 +209,18 @@ function getDeliveryPicContacts(
       (contact) =>
         normalizeText(contact.department ?? "") === normalizedSection ||
         normalizeText(contact.name) === normalizedSection,
+    )
+    .sort((first, second) => first.name.localeCompare(second.name, "id-ID"));
+}
+
+function getIncomingPicContacts(contacts: PicContact[]) {
+  const deliverySections = new Set(["ekspedisi", "mailing room"]);
+
+  return contacts
+    .filter(
+      (contact) =>
+        !deliverySections.has(normalizeText(contact.department ?? "")) &&
+        !deliverySections.has(normalizeText(contact.name)),
     )
     .sort((first, second) => first.name.localeCompare(second.name, "id-ID"));
 }
@@ -341,8 +368,6 @@ function buildOutgoingItems(
     category: letter.confidential ? "Confidential" : "Umum",
     description: letter.attention_to ? `u.p. ${letter.attention_to}` : "-",
     href: `/outgoing/${letter.id}`,
-    batchRecipient: letter.attention_to || letter.destination_name,
-    batchUnit: letter.destination_name,
     receipt: receiptStatusMap.get(letter.id),
   }));
 }
@@ -368,52 +393,46 @@ function itemMatchesKeyword(item: ReceiptListItem, keyword: string) {
 }
 
 function buildDailyBatchReceiptSections(items: ReceiptListItem[]) {
-  const dailyGroups = new Map<string, Map<string, BatchReceiptGroup>>();
+  const dailyItems = new Map<
+    string,
+    { documentItems: ReceiptListItem[]; invoiceItems: ReceiptListItem[] }
+  >();
 
   for (const item of items) {
-    if (
-      item.type === "OUTGOING" ||
-      item.receipt ||
-      !item.recipient ||
-      item.recipient === "-"
-    ) {
+    if (item.type === "OUTGOING" || item.receipt) {
       continue;
     }
 
     const dateKey = getDateKey(item.date);
-    const recipientKey = normalizeText(item.recipient);
-    const groupsForDate =
-      dailyGroups.get(dateKey) ?? new Map<string, BatchReceiptGroup>();
-    const existing = groupsForDate.get(recipientKey);
+    const itemsForDate = dailyItems.get(dateKey) ?? {
+      documentItems: [],
+      invoiceItems: [],
+    };
 
-    if (existing) {
-      existing.items.push(item);
-      if (!existing.unit.includes(item.department)) {
-        existing.unit = "Beberapa departemen";
-      }
-      continue;
+    if (item.type === "INVOICE") {
+      itemsForDate.invoiceItems.push(item);
+    } else {
+      itemsForDate.documentItems.push(item);
     }
 
-    groupsForDate.set(recipientKey, {
-      recipient: item.recipient,
-      unit: item.department,
-      items: [item],
-    });
-    dailyGroups.set(dateKey, groupsForDate);
+    dailyItems.set(dateKey, itemsForDate);
   }
 
-  return Array.from(dailyGroups.entries())
-    .map(([dateKey, groups]): DailyBatchReceiptSection => ({
+  return Array.from(dailyItems.entries())
+    .map(([dateKey, groupedItems]): DailyBatchReceiptSection => ({
       dateKey,
       dateLabel: formatDate(dateKey),
-      groups: Array.from(groups.values())
-        .sort(
-          (first, second) =>
-            second.items.length - first.items.length ||
-            first.recipient.localeCompare(second.recipient, "id"),
-        ),
+      documentItems: groupedItems.documentItems.sort(
+        (first, second) =>
+          new Date(second.sortDate).getTime() -
+          new Date(first.sortDate).getTime(),
+      ),
+      invoiceItems: groupedItems.invoiceItems.sort(
+        (first, second) =>
+          new Date(second.sortDate).getTime() -
+          new Date(first.sortDate).getTime(),
+      ),
     }))
-    .filter((section) => section.groups.length > 0)
     .sort((first, second) => second.dateKey.localeCompare(first.dateKey));
 }
 
@@ -510,6 +529,7 @@ export default async function ReceiptsPage({
       contact.whatsapp_number,
     ]),
   );
+  const incomingPicContacts = getIncomingPicContacts(picContacts);
 
   const [documentReceiptMap, outgoingReceiptMap] = await Promise.all([
     fetchDocumentReceiptStatusMap(
@@ -802,39 +822,53 @@ export default async function ReceiptsPage({
 
         <section
           className={[
-            "rounded-lg border border-slate-200 bg-white p-5 shadow-sm",
+            "overflow-hidden rounded-xl border border-sky-200 bg-[linear-gradient(135deg,#eff6ff_0%,#ffffff_52%,#fef2f2_100%)] shadow-sm",
             receiptMode === "incoming" ? "block" : "hidden",
           ].join(" ")}
         >
-          <div className="flex items-start gap-3">
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-[#0A3A60]/10 text-[#0A3A60]">
-              <Users className="size-5" aria-hidden="true" />
+          <div className="flex flex-col gap-4 border-b border-sky-200 p-5 sm:flex-row sm:items-start sm:justify-between">
+            <div className="flex items-start gap-3">
+              <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[#0A3A60] text-white shadow-sm">
+                <Inbox className="size-5" aria-hidden="true" />
+              </div>
+              <div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <h2 className="text-base font-semibold text-slate-950">
+                    Tanda Terima Dokumen & Invoice Harian
+                  </h2>
+                  <span className="rounded-full bg-sky-100 px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.12em] text-[#0A3A60]">
+                    Penerimaan
+                  </span>
+                </div>
+                <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-500">
+                  Pilih Dokumen Masuk atau Invoice Masuk, tentukan PIC yang
+                  bertugas, lalu centang item yang diserahkan pada tanggal itu.
+                </p>
+              </div>
             </div>
-            <div>
-              <h2 className="text-base font-semibold text-slate-950">
-                Tanda Terima Harian per PIC
-              </h2>
-              <p className="mt-1 text-sm leading-6 text-slate-500">
-                Semua PIC ditampilkan, termasuk yang hanya memiliki satu item.
-                Dokumen tetap dipisahkan berdasarkan tanggal penerimaan.
-              </p>
-            </div>
+            <LoadingLink
+              href="/settings/pic-contacts"
+              pendingLabel="Membuka..."
+              className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg border border-sky-200 bg-white px-3 text-sm font-semibold text-[#0A3A60] shadow-sm transition hover:bg-sky-50"
+            >
+              Atur PIC Penerima
+            </LoadingLink>
           </div>
 
           {dailyBatchReceiptSections.length > 0 ? (
-            <div className="mt-5 space-y-5">
+            <div className="space-y-5 p-4">
               {dailyBatchReceiptSections.map((section, sectionIndex) => (
                 <div
                   key={section.dateKey}
-                  className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50/70"
+                  className="overflow-hidden rounded-xl border border-sky-200 bg-white"
                 >
-                  <div className="flex flex-col gap-3 border-b border-slate-200 bg-white px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex flex-col gap-3 border-b border-sky-100 bg-sky-50/60 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex items-center gap-3">
                       <div className="flex size-10 items-center justify-center rounded-lg bg-[#0A3A60] text-white shadow-sm">
                         <CalendarDays className="size-5" aria-hidden="true" />
                       </div>
                       <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+                        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#0A3A60]">
                           Tanggal penerimaan
                         </p>
                         <h3 className="mt-0.5 font-semibold text-slate-950">
@@ -846,140 +880,204 @@ export default async function ReceiptsPage({
                       className={[
                         "w-fit rounded-full px-3 py-1 text-xs font-semibold",
                         sectionIndex === 0
-                          ? "bg-emerald-50 text-emerald-700"
-                          : "bg-slate-100 text-slate-600",
+                          ? "bg-[#0A3A60] text-white"
+                          : "bg-sky-100 text-[#0A3A60]",
                       ].join(" ")}
                     >
-                      {section.groups.length} PIC tersedia
+                      {section.documentItems.length + section.invoiceItems.length}{" "}
+                      item tersedia
                     </span>
                   </div>
 
                   <div className="grid gap-3 p-3 lg:grid-cols-2">
-                    {section.groups.map((group) => (
-                      <details
-                        key={`${section.dateKey}-${normalizeText(group.recipient)}`}
-                        className="group h-fit overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm open:border-[#0A3A60]/30"
-                      >
-                        <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-4 py-4">
-                          <div className="min-w-0">
-                            <p className="truncate font-semibold text-slate-950">
-                              {group.recipient}
-                            </p>
-                            <p className="mt-1 text-xs text-slate-500">
-                              {group.items.length} item pada tanggal ini
-                            </p>
-                            <p
+                    {incomingReceiptTypes.map((receiptType) => {
+                      const ReceiptIcon = receiptType.icon;
+                      const typeItems =
+                        receiptType.kind === "INVOICE"
+                          ? section.invoiceItems
+                          : section.documentItems;
+                      const hasPicContacts = incomingPicContacts.length > 0;
+
+                      return (
+                        <form
+                          key={`${section.dateKey}-${receiptType.kind}`}
+                          action={createBatchReceiptAction}
+                          className={[
+                            "h-fit overflow-hidden rounded-xl border shadow-sm",
+                            receiptType.cardClass,
+                          ].join(" ")}
+                        >
+                          <div className="flex items-start gap-3 border-b border-white/80 px-4 py-4">
+                            <div
                               className={[
-                                "mt-1 text-xs font-medium",
-                                picContactMap.has(normalizeText(group.recipient))
-                                  ? "text-emerald-600"
-                                  : "text-amber-600",
+                                "flex size-10 shrink-0 items-center justify-center rounded-lg shadow-sm",
+                                receiptType.iconClass,
                               ].join(" ")}
                             >
-                              {picContactMap.has(normalizeText(group.recipient))
-                                ? "Nomor WhatsApp tersedia"
-                                : "Nomor WhatsApp belum diatur"}
-                            </p>
-                          </div>
-                          <span className="shrink-0 rounded-full bg-[#0A3A60] px-3 py-1 text-xs font-semibold text-white">
-                            Buka
-                          </span>
-                        </summary>
-
-                        <form
-                          action={createBatchReceiptAction}
-                          className="border-t border-slate-200 bg-slate-50/70 p-4"
-                        >
-                          <input
-                            type="hidden"
-                            name="recipient_name"
-                            value={group.recipient}
-                          />
-                          <input
-                            type="hidden"
-                            name="recipient_unit"
-                            value={group.unit}
-                          />
-                          <input
-                            type="hidden"
-                            name="batch_date"
-                            value={section.dateKey}
-                          />
-                          <input
-                            type="hidden"
-                            name="return_to"
-                            value="/receipts"
-                          />
-
-                          <div className="grid gap-2">
-                            {group.items.map((item) => (
-                              <label
-                                key={`${item.type}-${item.id}`}
-                                className="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-200 bg-white px-3 py-3 transition hover:border-[#0A3A60]/30"
+                              <ReceiptIcon
+                                className="size-5"
+                                aria-hidden="true"
+                              />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="font-semibold text-slate-950">
+                                {receiptType.name}
+                              </p>
+                              <p className="mt-1 text-xs leading-5 text-slate-500">
+                                {receiptType.description}
+                              </p>
+                              <p
+                                className={[
+                                  "mt-1 text-xs font-medium",
+                                  hasPicContacts
+                                    ? "text-emerald-600"
+                                    : "text-amber-600",
+                                ].join(" ")}
                               >
-                                <input
-                                  type="checkbox"
-                                  name="document_ids"
-                                  value={item.id}
-                                  defaultChecked
-                                  className="mt-0.5 size-4 accent-[#0A3A60]"
-                                />
-                                <span className="min-w-0 flex-1">
-                                  <span className="flex flex-wrap items-center gap-2">
-                                    <span className="font-semibold text-slate-950">
-                                      {item.agendaNumber}
-                                    </span>
-                                    <span className="rounded-md bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-500">
-                                      {item.typeLabel}
-                                    </span>
-                                  </span>
-                                  <span className="mt-1 block truncate text-sm text-slate-500">
-                                    {item.sender} · {item.description}
-                                  </span>
+                                {typeItems.length} item ·{" "}
+                                {hasPicContacts
+                                  ? `${incomingPicContacts.length} PIC aktif`
+                                  : "PIC belum diatur"}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="p-4">
+                            <input
+                              type="hidden"
+                              name="receipt_kind"
+                              value={receiptType.kind}
+                            />
+                            <input
+                              type="hidden"
+                              name="batch_date"
+                              value={section.dateKey}
+                            />
+                            <input
+                              type="hidden"
+                              name="return_to"
+                              value="/receipts"
+                            />
+
+                            {hasPicContacts && typeItems.length > 0 ? (
+                              <label className="mb-4 block">
+                                <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                                  PIC yang menerima
+                                </span>
+                                <select
+                                  name="pic_contact_id"
+                                  required
+                                  defaultValue=""
+                                  className="mt-2 h-11 w-full rounded-lg border border-white bg-white px-3 text-sm font-semibold text-slate-900 outline-none transition focus:border-[#0A3A60]/40 focus:ring-4 focus:ring-sky-100"
+                                >
+                                  <option value="" disabled>
+                                    Pilih PIC {receiptType.name}
+                                  </option>
+                                  {incomingPicContacts.map((contact) => (
+                                    <option key={contact.id} value={contact.id}>
+                                      {contact.name} · +
+                                      {contact.whatsapp_number}
+                                    </option>
+                                  ))}
+                                </select>
+                                <span className="mt-1.5 block text-xs text-slate-500">
+                                  Link WhatsApp dikirim ke PIC yang dipilih.
                                 </span>
                               </label>
-                            ))}
-                          </div>
+                            ) : null}
 
-                          <div className="mt-4 flex items-center gap-2 rounded-lg border border-blue-100 bg-blue-50 px-3 py-2 text-xs font-medium text-[#0A3A60]">
-                            <CalendarDays
-                              className="size-3.5 shrink-0"
-                              aria-hidden="true"
-                            />
-                            Hanya untuk {section.dateLabel}
-                          </div>
+                            {typeItems.length > 0 ? (
+                              <div className="grid gap-2">
+                                {typeItems.map((item) => (
+                                  <label
+                                    key={`${item.type}-${item.id}`}
+                                    className="flex cursor-pointer items-start gap-3 rounded-lg border border-white bg-white px-3 py-3 transition hover:border-slate-300"
+                                  >
+                                    <input
+                                      type="checkbox"
+                                      name="document_ids"
+                                      value={item.id}
+                                      className={[
+                                        "mt-0.5 size-4",
+                                        receiptType.accentClass,
+                                      ].join(" ")}
+                                    />
+                                    <span className="min-w-0 flex-1">
+                                      <span className="flex flex-wrap items-center gap-2">
+                                        <span className="font-semibold text-slate-950">
+                                          {item.agendaNumber}
+                                        </span>
+                                        <span
+                                          className={[
+                                            "rounded-md px-2 py-0.5 text-xs font-semibold",
+                                            receiptType.badgeClass,
+                                          ].join(" ")}
+                                        >
+                                          {receiptType.name}
+                                        </span>
+                                      </span>
+                                      <span className="mt-1 block text-sm text-slate-500">
+                                        {item.sender} → {item.recipient}
+                                      </span>
+                                      <span className="mt-1 block truncate text-xs text-slate-400">
+                                        {item.description}
+                                      </span>
+                                    </span>
+                                  </label>
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="rounded-lg border border-dashed border-white bg-white/70 px-3 py-5 text-center text-sm text-slate-500">
+                                Tidak ada {receiptType.name.toLowerCase()} yang
+                                siap dibuatkan tanda terima.
+                              </div>
+                            )}
 
-                          <PendingSubmitButton
-                            pendingLabel="Membuat tanda terima..."
-                            className="mt-3 inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-[#0A3A60] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#082F4D]"
-                          >
-                            <Files className="size-4" aria-hidden="true" />
-                            {picContactMap.has(normalizeText(group.recipient))
-                              ? "Buat & Siapkan WhatsApp"
-                              : "Buat Tanda Terima Harian"}
-                          </PendingSubmitButton>
-                          {!picContactMap.has(
-                            normalizeText(group.recipient),
-                          ) ? (
-                            <LoadingLink
-                              href="/settings/pic-contacts"
-                              pendingLabel="Membuka..."
-                              className="mt-2 inline-flex h-9 w-full items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-600 transition hover:border-[#0A3A60]/30 hover:text-[#0A3A60]"
-                            >
-                              Atur nomor WhatsApp PIC
-                            </LoadingLink>
-                          ) : null}
+                            {typeItems.length > 0 ? (
+                              <div className="mt-4 flex items-center gap-2 rounded-lg border border-white bg-white px-3 py-2 text-xs font-medium text-slate-600">
+                                <CalendarDays
+                                  className="size-3.5 shrink-0"
+                                  aria-hidden="true"
+                                />
+                                Hanya untuk {section.dateLabel}
+                              </div>
+                            ) : null}
+
+                            {hasPicContacts && typeItems.length > 0 ? (
+                              <PendingSubmitButton
+                                pendingLabel="Membuat tanda terima..."
+                                className={[
+                                  "mt-3 inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg px-4 text-sm font-semibold text-white shadow-sm transition",
+                                  receiptType.buttonClass,
+                                ].join(" ")}
+                              >
+                                <ReceiptIcon
+                                  className="size-4"
+                                  aria-hidden="true"
+                                />
+                                Buat & Siapkan WhatsApp
+                              </PendingSubmitButton>
+                            ) : !hasPicContacts && typeItems.length > 0 ? (
+                              <LoadingLink
+                                href="/settings/pic-contacts"
+                                pendingLabel="Membuka..."
+                                className="mt-3 inline-flex h-11 w-full items-center justify-center rounded-lg border border-white bg-white px-3 text-sm font-semibold text-[#0A3A60]"
+                              >
+                                Tambah PIC Penerima
+                              </LoadingLink>
+                            ) : null}
+                          </div>
                         </form>
-                      </details>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="mt-5 rounded-lg border border-dashed border-slate-200 bg-slate-50 px-4 py-5 text-sm text-slate-500">
-              Belum ada PIC dengan dokumen atau invoice yang siap dibuatkan
-              tanda terima harian.
+            <div className="m-4 rounded-xl border border-dashed border-sky-200 bg-white/70 px-4 py-5 text-sm text-slate-500">
+              Belum ada Dokumen Masuk atau Invoice yang siap dibuatkan tanda
+              terima harian.
             </div>
           )}
         </section>

@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 type ReceiptTargetType = "DOCUMENT" | "INVOICE" | "OUTGOING";
+type IncomingReceiptKind = "DOCUMENT" | "INVOICE";
 const validOutgoingDeliverySections = new Set(["Ekspedisi", "Mailing Room"]);
 
 function formString(formData: FormData, key: string) {
@@ -28,6 +29,10 @@ function isReceiptTargetType(value: string): value is ReceiptTargetType {
   return ["DOCUMENT", "INVOICE", "OUTGOING"].includes(value);
 }
 
+function isIncomingReceiptKind(value: string): value is IncomingReceiptKind {
+  return value === "DOCUMENT" || value === "INVOICE";
+}
+
 function normalizeRecipient(value: string | null | undefined) {
   return String(value ?? "").trim().toLocaleLowerCase("id-ID");
 }
@@ -41,6 +46,18 @@ function contactMatchesDeliverySection(
   return (
     normalizeRecipient(contact.department) === normalizedSection ||
     normalizeRecipient(contact.name) === normalizedSection
+  );
+}
+
+function isOutgoingDeliveryContact(contact: {
+  name: string;
+  department: string | null;
+}) {
+  const deliverySections = new Set(["ekspedisi", "mailing room"]);
+
+  return (
+    deliverySections.has(normalizeRecipient(contact.department)) ||
+    deliverySections.has(normalizeRecipient(contact.name))
   );
 }
 
@@ -145,8 +162,8 @@ export async function createBatchReceiptAction(formData: FormData) {
   }
 
   const returnTo = normalizeReturnTo(formString(formData, "return_to"));
-  const recipientName = formString(formData, "recipient_name");
-  const recipientUnit = formString(formData, "recipient_unit");
+  const picContactId = formString(formData, "pic_contact_id");
+  const receiptKind = formString(formData, "receipt_kind");
   const batchDate = formString(formData, "batch_date");
   const documentIds = Array.from(
     new Set(
@@ -157,11 +174,39 @@ export async function createBatchReceiptAction(formData: FormData) {
     ),
   );
 
-  if (!recipientName || !batchDate || documentIds.length < 1) {
+  if (
+    !picContactId ||
+    !isIncomingReceiptKind(receiptKind) ||
+    !batchDate ||
+    documentIds.length < 1
+  ) {
     redirect(
       withMessage(
         returnTo,
-        "Pilih minimal satu dokumen atau invoice untuk tanda terima harian.",
+        "Pilih PIC dan minimal satu dokumen atau invoice untuk tanda terima harian.",
+      ),
+    );
+  }
+
+  const { data: selectedContact, error: selectedContactError } = await supabase
+    .from("pic_contacts")
+    .select("id, name, whatsapp_number, department, active")
+    .eq("id", picContactId)
+    .eq("active", true)
+    .maybeSingle();
+  if (
+    selectedContactError ||
+    !selectedContact ||
+    isOutgoingDeliveryContact(selectedContact)
+  ) {
+    console.error("Failed to validate incoming receipt PIC", {
+      selectedContactError,
+      picContactId,
+    });
+    redirect(
+      withMessage(
+        returnTo,
+        "Pilih PIC Dokumen Masuk atau Invoice yang aktif.",
       ),
     );
   }
@@ -170,9 +215,7 @@ export async function createBatchReceiptAction(formData: FormData) {
     await Promise.all([
       supabase
         .from("documents")
-        .select(
-          "id, type, received_at, recipient_name, invoice_details(internal_pic)",
-        )
+        .select("id, type, received_at")
         .in("id", documentIds),
       supabase
         .from("receipt_requests")
@@ -203,28 +246,20 @@ export async function createBatchReceiptAction(formData: FormData) {
     );
   }
 
-  const selectedRecipients = new Set(
-    (documents ?? []).map((document) => {
-      const invoiceDetails = Array.isArray(document.invoice_details)
-        ? document.invoice_details[0]
-        : document.invoice_details;
-      const documentRecipient =
-        document.type === "INVOICE"
-          ? invoiceDetails?.internal_pic || document.recipient_name
-          : document.recipient_name;
-
-      return normalizeRecipient(documentRecipient);
-    }),
+  const selectedTypes = new Set(
+    (documents ?? []).map((document) =>
+      document.type === "INVOICE" ? "INVOICE" : "DOCUMENT",
+    ),
   );
 
   if (
-    selectedRecipients.size !== 1 ||
-    !selectedRecipients.has(normalizeRecipient(recipientName))
+    selectedTypes.size !== 1 ||
+    !selectedTypes.has(receiptKind)
   ) {
     redirect(
       withMessage(
         returnTo,
-        "Tanda terima harian hanya boleh berisi dokumen untuk PIC yang sama.",
+        "Dokumen Masuk dan Invoice tidak boleh digabung dalam satu tanda terima.",
       ),
     );
   }
@@ -260,8 +295,8 @@ export async function createBatchReceiptAction(formData: FormData) {
   const { data: batch, error: batchError } = await supabase
     .from("receipt_batches")
     .insert({
-      recipient_name: recipientName,
-      recipient_unit: recipientUnit || null,
+      recipient_name: selectedContact.name,
+      recipient_unit: selectedContact.department || null,
       created_by: user.id,
     })
     .select("id, token")
@@ -303,10 +338,12 @@ export async function createBatchReceiptAction(formData: FormData) {
   const successParams = new URLSearchParams({
     receipt_mode: "incoming",
     batch_created: batch.token,
-    batch_recipient: recipientName,
+    batch_recipient: selectedContact.name,
     batch_date: batchDate,
     batch_count: String(documentIds.length),
-    message: `Tanda terima harian untuk ${recipientName} berhasil dibuat.`,
+    message: `Tanda terima ${
+      receiptKind === "INVOICE" ? "Invoice Masuk" : "Dokumen Masuk"
+    } untuk PIC ${selectedContact.name} berhasil dibuat.`,
   });
   redirect(`/receipts?${successParams.toString()}`);
 }
