@@ -36,6 +36,16 @@ type PublicBatchItem = {
   sender_name: string | null;
   item_recipient_name: string | null;
   department_name: string | null;
+  category_name?: string | null;
+  received_at?: string | null;
+  letter_number?: string | null;
+  letter_date?: string | null;
+  subject?: string | null;
+  employee_name?: string | null;
+  document_amount?: number | null;
+  invoice_number?: string | null;
+  invoice_amount?: number | null;
+  notes?: string | null;
 };
 
 const uuidPattern =
@@ -51,6 +61,45 @@ const dateTimeFormatter = new Intl.DateTimeFormat("id-ID", {
 
 function formatDateTime(value: string | null) {
   return value ? dateTimeFormatter.format(new Date(value)) : "-";
+}
+
+const dateFormatter = new Intl.DateTimeFormat("id-ID", {
+  day: "2-digit",
+  month: "long",
+  year: "numeric",
+});
+
+const currencyFormatter = new Intl.NumberFormat("id-ID", {
+  style: "currency",
+  currency: "IDR",
+  maximumFractionDigits: 0,
+});
+
+function formatDate(value: string | null | undefined) {
+  return value ? dateFormatter.format(new Date(value)) : "-";
+}
+
+function formatCurrency(value: number | null | undefined) {
+  return value ? currencyFormatter.format(value) : "-";
+}
+
+function ItemDetail({
+  label,
+  value,
+}: {
+  label: string;
+  value: string | null | undefined;
+}) {
+  return (
+    <div>
+      <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">
+        {label}
+      </p>
+      <p className="mt-1 break-words text-sm font-semibold text-slate-800">
+        {value || "-"}
+      </p>
+    </div>
+  );
 }
 
 function ErrorCard({ message }: { message: string }) {
@@ -86,9 +135,15 @@ export default async function BatchReceiptPage({
   }
 
   const supabase = await createSupabaseServerClient();
-  const { data, error } = await supabase.rpc("get_receipt_batch_by_token", {
-    p_token: token,
-  });
+  const detailedResult = await supabase.rpc(
+    "get_receipt_batch_details_by_token",
+    { p_token: token },
+  );
+  const fallbackResult = detailedResult.error
+    ? await supabase.rpc("get_receipt_batch_by_token", { p_token: token })
+    : null;
+  const data = detailedResult.error ? fallbackResult?.data : detailedResult.data;
+  const error = detailedResult.error ? fallbackResult?.error : detailedResult.error;
 
   if (error) {
     return (
@@ -169,25 +224,108 @@ export default async function BatchReceiptPage({
               {items.map((item, index) => (
                 <div
                   key={item.item_id}
-                  className="grid gap-2 bg-white px-4 py-4 sm:grid-cols-[36px_minmax(0,1fr)_auto]"
+                  className="bg-white px-4 py-5"
                 >
-                  <span className="flex size-8 items-center justify-center rounded-md bg-slate-100 text-xs font-bold text-slate-500">
-                    {index + 1}
-                  </span>
-                  <div>
-                    <p className="font-semibold text-slate-950">
-                      {item.agenda_number}
-                    </p>
-                    <p className="mt-1 text-sm text-slate-600">
-                      {item.title || "-"}
-                    </p>
-                    <p className="mt-1 text-xs text-slate-400">
-                      {item.sender_name || "-"} · {item.department_name || "-"}
-                    </p>
+                  <div className="flex items-start gap-3">
+                    <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-xs font-bold text-slate-500">
+                      {index + 1}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-start justify-between gap-2">
+                        <div>
+                          <p className="font-semibold text-slate-950">
+                            {item.agenda_number}
+                          </p>
+                          <p className="mt-1 text-sm leading-6 text-slate-600">
+                            {item.subject || item.title || "-"}
+                          </p>
+                        </div>
+                        <span
+                          className={[
+                            "h-fit rounded-md px-2.5 py-1 text-xs font-semibold",
+                            item.target_type === "INVOICE"
+                              ? "bg-red-50 text-red-700"
+                              : "bg-sky-50 text-[#0A3A60]",
+                          ].join(" ")}
+                        >
+                          {item.target_type === "INVOICE"
+                            ? "Invoice"
+                            : "Dokumen"}
+                        </span>
+                      </div>
+
+                      <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-4 border-t border-slate-100 pt-4 sm:grid-cols-3">
+                        <ItemDetail
+                          label="Tanggal diterima"
+                          value={formatDate(item.received_at)}
+                        />
+                        <ItemDetail
+                          label={
+                            item.target_type === "INVOICE"
+                              ? "Nomor invoice"
+                              : "Nomor surat"
+                          }
+                          value={
+                            item.target_type === "INVOICE"
+                              ? item.invoice_number
+                              : item.letter_number
+                          }
+                        />
+                        <ItemDetail
+                          label="Pengirim / vendor"
+                          value={item.sender_name}
+                        />
+                        <ItemDetail
+                          label="PIC penerima"
+                          value={item.item_recipient_name}
+                        />
+                        <ItemDetail
+                          label="Departemen"
+                          value={item.department_name}
+                        />
+                        <ItemDetail
+                          label="Kategori"
+                          value={item.category_name}
+                        />
+                        {item.target_type === "INVOICE" ? (
+                          <ItemDetail
+                            label="Nominal invoice"
+                            value={formatCurrency(item.invoice_amount)}
+                          />
+                        ) : (
+                          <>
+                            <ItemDetail
+                              label="Tanggal surat"
+                              value={formatDate(item.letter_date)}
+                            />
+                            {item.employee_name ? (
+                              <ItemDetail
+                                label="Nama karyawan"
+                                value={item.employee_name}
+                              />
+                            ) : null}
+                            {item.document_amount ? (
+                              <ItemDetail
+                                label="Total dokumen"
+                                value={formatCurrency(item.document_amount)}
+                              />
+                            ) : null}
+                          </>
+                        )}
+                      </div>
+
+                      {item.notes ? (
+                        <div className="mt-4 rounded-lg bg-slate-50 px-3 py-3">
+                          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">
+                            Catatan
+                          </p>
+                          <p className="mt-1 text-sm leading-6 text-slate-700">
+                            {item.notes}
+                          </p>
+                        </div>
+                      ) : null}
+                    </div>
                   </div>
-                  <span className="h-fit rounded-md bg-slate-100 px-2.5 py-1 text-xs font-semibold text-[#0A3A60]">
-                    {item.target_type === "INVOICE" ? "Invoice" : "Dokumen"}
-                  </span>
                 </div>
               ))}
             </div>
