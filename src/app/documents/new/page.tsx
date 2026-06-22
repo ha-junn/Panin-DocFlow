@@ -15,6 +15,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createLetterAction } from "./actions";
 import { DocumentQuickFields } from "./DocumentQuickFields";
 import { EmployeeRows } from "./EmployeeRows";
+import { TransferNoteRows } from "./TransferNoteRows";
 
 type NewDocumentPageProps = {
   searchParams: Promise<{
@@ -200,7 +201,7 @@ export default async function NewDocumentPage({
               <div className="md:col-span-2">
                 <div className="mb-4">
                   <h2 className="text-sm font-semibold text-slate-950">
-                    Daftar karyawan
+                    Daftar karyawan BPKU
                   </h2>
                   <p className="mt-1 text-sm text-slate-500">
                     Opsional. Gunakan untuk BPKU, lembur, transport, atau
@@ -208,6 +209,24 @@ export default async function NewDocumentPage({
                   </p>
                 </div>
                 <EmployeeRows />
+              </div>
+
+              <div className="md:col-span-2 rounded-xl border border-amber-200 bg-amber-50/60 p-4">
+                <div className="mb-4">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h2 className="text-sm font-semibold text-slate-950">
+                      Nota Pemindahan
+                    </h2>
+                    <span className="rounded-full bg-amber-100 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-amber-800">
+                      Khusus kategori Nota Pemindahan
+                    </span>
+                  </div>
+                  <p className="mt-1 text-sm leading-6 text-slate-500">
+                    Isi satu baris untuk setiap keterangan pemindahan beserta
+                    jumlahnya.
+                  </p>
+                </div>
+                <TransferNoteRows />
               </div>
 
               <label className="block md:col-span-2">

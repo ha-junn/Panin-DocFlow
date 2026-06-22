@@ -38,6 +38,7 @@ const quickCategoryNames = [
   "TRANSPORT DINAS",
   "FORM LEMBUR",
   "INTERNAL",
+  "NOTA PEMINDAHAN",
 ];
 
 function normalizeName(value: string) {

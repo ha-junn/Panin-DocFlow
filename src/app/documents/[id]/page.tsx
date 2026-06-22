@@ -208,6 +208,8 @@ export default async function DocumentDetailPage({
   }
 
   const timeline = (events ?? []) as unknown as DocumentEvent[];
+  const isTransferNote =
+    detail.category?.name.trim().toUpperCase() === "NOTA PEMINDAHAN";
 
   return (
     <AppLayout>
@@ -302,8 +304,14 @@ export default async function DocumentDetailPage({
                 />
                 <DetailItem label="Kategori" value={detail.category?.name} />
                 <DetailItem label="Perihal" value={detail.subject} />
-                <DetailItem label="Nama karyawan" value={detail.employee_name} />
-                <DetailItem label="Total" value={formatCurrency(detail.amount)} />
+                <DetailItem
+                  label={isTransferNote ? "Keterangan" : "Nama karyawan"}
+                  value={detail.employee_name}
+                />
+                <DetailItem
+                  label={isTransferNote ? "Jumlah" : "Total"}
+                  value={formatCurrency(detail.amount)}
+                />
                 <DetailItem label="Pengirim" value={detail.sender_name} />
                 <DetailItem label="Ditujukan kepada" value={detail.recipient_name} />
                 <DetailItem

@@ -150,6 +150,11 @@ export default async function EditDocumentPage({
   );
   const invoiceDetail = getInvoiceDetail(detail.invoice_details);
   const isInvoice = detail.type === "INVOICE";
+  const selectedCategory = categoryOptions.find(
+    (category) => category.id === detail.category_id,
+  );
+  const isTransferNote =
+    selectedCategory?.name.trim().toUpperCase() === "NOTA PEMINDAHAN";
 
   return (
     <AppLayout>
@@ -362,20 +367,22 @@ export default async function EditDocumentPage({
                 <div className="grid gap-5 md:col-span-2 md:grid-cols-2">
                   <label className="block">
                     <span className="text-sm font-medium text-slate-700">
-                      Nama karyawan
+                      {isTransferNote ? "Keterangan" : "Nama karyawan"}
                     </span>
                     <input
                       name="employee_name"
                       type="text"
                       defaultValue={detail.employee_name ?? ""}
-                      placeholder="Opsional"
+                      placeholder={
+                        isTransferNote ? "Keterangan pemindahan" : "Opsional"
+                      }
                       className="mt-1.5 h-11 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#0A3A60] focus:bg-white focus:ring-4 focus:ring-[#0A3A60]/10"
                     />
                   </label>
 
                   <label className="block">
                     <span className="text-sm font-medium text-slate-700">
-                      Total
+                      {isTransferNote ? "Jumlah" : "Total"}
                     </span>
                     <input
                       name="document_amount"

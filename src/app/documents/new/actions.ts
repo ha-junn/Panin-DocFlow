@@ -99,6 +99,12 @@ export async function createLetterAction(formData: FormData) {
   const amounts = formData
     .getAll("document_amount")
     .map((value) => parseOptionalRupiah(String(value).trim()));
+  const transferDescriptions = formData
+    .getAll("transfer_description")
+    .map((value) => uppercaseText(String(value)));
+  const transferAmounts = formData
+    .getAll("transfer_amount")
+    .map((value) => parseOptionalRupiah(String(value).trim()));
   const categoryId = requiredString(formData, "category_id");
   const notes = uppercaseText(requiredString(formData, "notes"));
   const attachment = formData.get("attachment");
@@ -115,12 +121,6 @@ export async function createLetterAction(formData: FormData) {
     );
   }
 
-  if (amounts.some((amount) => amount === undefined)) {
-    redirect(
-      "/documents/new?type=letter&message=Total harus berupa angka Rupiah lebih dari 0 atau dikosongkan.",
-    );
-  }
-
   const employeeItems = employeeNames
     .map((employeeName, index) => ({
       employeeName: employeeName || null,
@@ -128,14 +128,64 @@ export async function createLetterAction(formData: FormData) {
     }))
     .filter((item) => item.employeeName || item.amount);
 
-  if (employeeItems.some((item) => !item.employeeName)) {
+  const transferItems = transferDescriptions
+    .map((description, index) => ({
+      employeeName: description || null,
+      amount: transferAmounts[index] ?? null,
+    }))
+    .filter((item) => item.employeeName || item.amount);
+
+  const { data: selectedCategory, error: categoryError } = await supabase
+    .from("document_categories")
+    .select("id, name, type")
+    .eq("id", categoryId)
+    .in("type", ["LETTER", "BOTH"])
+    .maybeSingle();
+
+  if (categoryError || !selectedCategory) {
+    console.error("Failed to validate document category", categoryError);
     redirect(
-      "/documents/new?type=letter&message=Lengkapi nama karyawan pada setiap baris yang diisi.",
+      "/documents/new?type=letter&message=Kategori dokumen tidak valid.",
     );
   }
 
-  const documentsToCreate =
-    employeeItems.length > 0
+  const isTransferNote =
+    uppercaseText(selectedCategory.name) === "NOTA PEMINDAHAN";
+
+  if (isTransferNote) {
+    if (transferAmounts.some((amount) => amount === undefined)) {
+      redirect(
+        "/documents/new?type=letter&message=Jumlah Nota Pemindahan harus berupa angka Rupiah lebih dari 0.",
+      );
+    }
+
+    if (
+      transferItems.length === 0 ||
+      transferItems.some(
+        (item) => !item.employeeName || item.amount === null,
+      )
+    ) {
+      redirect(
+        "/documents/new?type=letter&message=Nota Pemindahan wajib memiliki Keterangan dan Jumlah yang lengkap.",
+      );
+    }
+  } else {
+    if (amounts.some((amount) => amount === undefined)) {
+      redirect(
+        "/documents/new?type=letter&message=Total harus berupa angka Rupiah lebih dari 0 atau dikosongkan.",
+      );
+    }
+
+    if (employeeItems.some((item) => !item.employeeName)) {
+      redirect(
+        "/documents/new?type=letter&message=Lengkapi nama karyawan pada setiap baris yang diisi.",
+      );
+    }
+  }
+
+  const documentsToCreate = isTransferNote
+    ? transferItems
+    : employeeItems.length > 0
       ? employeeItems
       : [{ employeeName: null, amount: null }];
 

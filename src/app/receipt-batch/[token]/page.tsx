@@ -300,13 +300,25 @@ export default async function BatchReceiptPage({
                             />
                             {item.employee_name ? (
                               <ItemDetail
-                                label="Nama karyawan"
+                                label={
+                                  item.category_name
+                                    ?.trim()
+                                    .toUpperCase() === "NOTA PEMINDAHAN"
+                                    ? "Keterangan"
+                                    : "Nama karyawan"
+                                }
                                 value={item.employee_name}
                               />
                             ) : null}
                             {item.document_amount ? (
                               <ItemDetail
-                                label="Total dokumen"
+                                label={
+                                  item.category_name
+                                    ?.trim()
+                                    .toUpperCase() === "NOTA PEMINDAHAN"
+                                    ? "Jumlah"
+                                    : "Total dokumen"
+                                }
                                 value={formatCurrency(item.document_amount)}
                               />
                             ) : null}

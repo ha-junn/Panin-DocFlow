@@ -106,6 +106,33 @@ export async function updateDocumentAction(formData: FormData) {
     );
   }
 
+  if (documentType === "LETTER") {
+    const { data: selectedCategory, error: categoryError } = await supabase
+      .from("document_categories")
+      .select("name")
+      .eq("id", categoryId)
+      .maybeSingle();
+
+    if (categoryError || !selectedCategory) {
+      redirect(
+        `/documents/${documentId}/edit?message=${encodeURIComponent(
+          "Kategori dokumen tidak valid.",
+        )}`,
+      );
+    }
+
+    const isTransferNote =
+      uppercaseText(selectedCategory.name) === "NOTA PEMINDAHAN";
+
+    if (isTransferNote && (!employeeName || documentAmount === null)) {
+      redirect(
+        `/documents/${documentId}/edit?message=${encodeURIComponent(
+          "Nota Pemindahan wajib memiliki Keterangan dan Jumlah.",
+        )}`,
+      );
+    }
+  }
+
   if (documentType === "INVOICE" && invoiceNumber) {
     const { data: existingInvoice, error: existingError } = await supabase
       .from("invoice_details")
