@@ -72,6 +72,13 @@ function receivedDateToIso(value: string) {
   return new Date(`${value}T00:00:00`).toISOString();
 }
 
+function createAutomaticInvoiceNumber(receivedAt: string) {
+  const date = receivedAt.replace(/\D/g, "").slice(0, 8);
+  const random = crypto.randomUUID().replaceAll("-", "").slice(0, 8).toUpperCase();
+
+  return `INV-${date || "AUTO"}-${random}`;
+}
+
 export async function createInvoiceBatchAction(formData: FormData) {
   const supabase = await createSupabaseServerClient();
   const {
@@ -88,9 +95,13 @@ export async function createInvoiceBatchAction(formData: FormData) {
   const categoryId = formString(formData, "category_id");
   const internalPic = uppercaseText(formString(formData, "internal_pic"));
   const notes = uppercaseText(formString(formData, "notes"));
-  const invoiceNumbers = formData
+  const submittedInvoiceNumbers = formData
     .getAll("invoice_number")
     .map((value) => uppercaseText(String(value)));
+  const invoiceNumbers = submittedInvoiceNumbers.map(
+    (invoiceNumber) =>
+      invoiceNumber || createAutomaticInvoiceNumber(receivedAt),
+  );
   const amounts = formData
     .getAll("amount")
     .map((value) => parseAmount(String(value).trim()));
@@ -102,9 +113,8 @@ export async function createInvoiceBatchAction(formData: FormData) {
     );
   }
 
-  const filledInvoiceNumbers = invoiceNumbers.filter(Boolean);
-  const duplicateInForm = filledInvoiceNumbers.find(
-    (invoiceNumber, index) => filledInvoiceNumbers.indexOf(invoiceNumber) !== index,
+  const duplicateInForm = invoiceNumbers.find(
+    (invoiceNumber, index) => invoiceNumbers.indexOf(invoiceNumber) !== index,
   );
 
   if (duplicateInForm) {
@@ -116,18 +126,25 @@ export async function createInvoiceBatchAction(formData: FormData) {
   }
 
   const invoiceItems = invoiceNumbers.map((invoiceNumber, index) => ({
-    invoiceNumber: invoiceNumber || null,
+    invoiceNumber,
     amount: amounts[index] ?? null,
-  })).filter((item) => item.invoiceNumber || item.amount);
+  }));
 
   const itemsToCreate =
-    invoiceItems.length > 0 ? invoiceItems : [{ invoiceNumber: null, amount: null }];
+    invoiceItems.length > 0
+      ? invoiceItems
+      : [
+          {
+            invoiceNumber: createAutomaticInvoiceNumber(receivedAt),
+            amount: null,
+          },
+        ];
 
-  if (filledInvoiceNumbers.length > 0) {
+  if (invoiceNumbers.length > 0) {
     const { data: existingInvoices, error: existingError } = await supabase
       .from("invoice_details")
       .select("invoice_number")
-      .in("invoice_number", filledInvoiceNumbers);
+      .in("invoice_number", invoiceNumbers);
 
     if (existingError) {
       console.error("Failed to validate invoice numbers", existingError);

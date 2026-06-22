@@ -97,8 +97,9 @@ export default async function NewInvoicePage({
                 Tambah Invoice Masuk
               </h1>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
-                Isi vendor satu kali, lalu tambahkan nomor invoice atau nominal
-                jika tersedia. Nomor invoice dan nominal boleh dikosongkan.
+                Isi vendor satu kali, lalu tambahkan nominal jika tersedia.
+                Nomor invoice otomatis dibuat dengan kode unik dan tetap dapat
+                diganti dengan nomor resmi.
               </p>
             </div>
 
@@ -212,8 +213,8 @@ export default async function NewInvoicePage({
                   Daftar Invoice
                 </h2>
                 <p className="mt-1 text-sm text-slate-500">
-                  Tambahkan rincian invoice jika tersedia. Baris boleh
-                  dikosongkan dan tetap bisa disimpan.
+                  Setiap baris mendapat kode invoice unik otomatis agar tidak
+                  bentrok dengan data sebelumnya.
                 </p>
               </div>
               <InvoiceRows />
