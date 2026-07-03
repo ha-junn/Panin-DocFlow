@@ -91,7 +91,7 @@ export function SearchFilters({
 
   return (
     <form className="border-b border-slate-200 p-5" onSubmit={submitSearch}>
-      <div className="grid gap-3 lg:grid-cols-[minmax(280px,1fr)_150px_210px_190px_auto_auto]">
+      <div className="grid gap-3 lg:grid-cols-[minmax(280px,1fr)_170px_210px_190px_auto_auto]">
         <label className="relative block">
           <Search
             className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400"
@@ -102,7 +102,7 @@ export function SearchFilters({
             type="search"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Cari agenda, vendor, kategori, PIC"
+            placeholder="Cari nomor, PIC, departemen, kategori, catatan, perihal"
             className="h-10 w-full rounded-lg border border-slate-200 bg-slate-50 pl-9 pr-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#0A3A60] focus:bg-white focus:ring-4 focus:ring-[#0A3A60]/10"
           />
         </label>
@@ -114,8 +114,10 @@ export function SearchFilters({
           className="h-10 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm text-slate-900 outline-none transition focus:border-[#0A3A60] focus:bg-white focus:ring-4 focus:ring-[#0A3A60]/10"
         >
           <option value="">Semua jenis</option>
-          <option value="LETTER">Surat</option>
+          <option value="LETTER">Dokumen</option>
           <option value="INVOICE">Invoice</option>
+          <option value="OUTGOING">Surat Keluar</option>
+          <option value="RECEIPT">Tanda Terima</option>
         </select>
 
         <select
