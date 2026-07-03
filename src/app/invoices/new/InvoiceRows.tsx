@@ -2,6 +2,7 @@
 
 import { Plus, RefreshCw, Trash2 } from "lucide-react";
 import { useState } from "react";
+import { RupiahInput } from "@/components/RupiahInput";
 
 type InvoiceRow = {
   id: string;
@@ -65,11 +66,8 @@ export function InvoiceRows() {
             placeholder={`Nomor invoice ${index + 1}`}
             className="h-11 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#0A3A60] focus:bg-white focus:ring-4 focus:ring-[#0A3A60]/10"
           />
-          <input
+          <RupiahInput
             name="amount"
-            type="number"
-            min="0"
-            step="0.01"
             placeholder="Opsional"
             className="h-11 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#0A3A60] focus:bg-white focus:ring-4 focus:ring-[#0A3A60]/10"
           />

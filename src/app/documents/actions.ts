@@ -76,6 +76,13 @@ export async function deleteDocumentAction(formData: FormData) {
 
     if (storageError) {
       console.error("Failed to remove document attachment", storageError);
+      revalidateDocumentViews(id);
+      redirect(
+        redirectPath(
+          expectedType,
+          "Data berhasil dihapus, tetapi lampiran gagal dihapus. Hubungi admin untuk pengecekan storage.",
+        ),
+      );
     }
   }
 

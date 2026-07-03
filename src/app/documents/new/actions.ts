@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { jakartaDateToIso } from "@/lib/date";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { uppercaseText } from "@/lib/text";
 
@@ -34,10 +35,6 @@ function parseOptionalRupiah(value: string) {
   }
 
   return amount;
-}
-
-function receivedDateToIso(value: string) {
-  return new Date(`${value}T00:00:00`).toISOString();
 }
 
 function getFileExtension(file: File) {
@@ -232,7 +229,7 @@ export async function createLetterAction(formData: FormData) {
     type: "LETTER",
     letter_number: letterNumber || null,
     letter_date: letterDate || null,
-    received_at: receivedDateToIso(receivedAt),
+    received_at: jakartaDateToIso(receivedAt),
     sender_name: senderName,
     recipient_name: recipientName,
     department_id: departmentId,

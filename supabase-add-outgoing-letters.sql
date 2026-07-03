@@ -127,15 +127,16 @@ create policy "Authenticated users can update outgoing letters"
 on public.outgoing_letters
 for update
 to authenticated
-using (true)
-with check (auth.uid() = updated_by);
+using (public.is_admin() or auth.uid() = created_by)
+with check (public.is_admin() or auth.uid() = updated_by);
 
 drop policy if exists "Authenticated users can delete outgoing letters" on public.outgoing_letters;
-create policy "Authenticated users can delete outgoing letters"
+drop policy if exists "Admins can delete outgoing letters" on public.outgoing_letters;
+create policy "Admins can delete outgoing letters"
 on public.outgoing_letters
 for delete
 to authenticated
-using (true);
+using (public.is_admin());
 
 do $$
 begin

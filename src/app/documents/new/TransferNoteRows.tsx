@@ -2,6 +2,7 @@
 
 import { Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
+import { RupiahInput } from "@/components/RupiahInput";
 
 type TransferNoteRow = {
   id: string;
@@ -39,10 +40,8 @@ export function TransferNoteRows() {
             placeholder={`Keterangan ${index + 1}`}
             className="h-11 rounded-lg border border-amber-200 bg-white px-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-amber-500 focus:ring-4 focus:ring-amber-100"
           />
-          <input
+          <RupiahInput
             name="transfer_amount"
-            type="text"
-            inputMode="numeric"
             placeholder="Contoh: Rp 150.000"
             className="h-11 rounded-lg border border-amber-200 bg-white px-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-amber-500 focus:ring-4 focus:ring-amber-100"
           />

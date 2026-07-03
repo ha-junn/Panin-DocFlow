@@ -37,8 +37,9 @@ type Category = {
   created_at: string;
 };
 
-type DocumentReference = {
-  category_id: string | null;
+type CategoryUsage = {
+  category_id: string;
+  document_count: number;
 };
 
 const categoryTypeLabels: Record<CategoryType, string> = {
@@ -53,14 +54,10 @@ const categoryTypeStyles: Record<CategoryType, string> = {
   BOTH: "bg-emerald-50 text-emerald-700",
 };
 
-function countByCategory(documents: DocumentReference[]) {
-  return documents.reduce<Record<string, number>>((accumulator, document) => {
-    if (document.category_id) {
-      accumulator[document.category_id] = (accumulator[document.category_id] ?? 0) + 1;
-    }
-
-    return accumulator;
-  }, {});
+function mapCategoryUsage(rows: CategoryUsage[] | null) {
+  return Object.fromEntries(
+    (rows ?? []).map((row) => [row.category_id, Number(row.document_count)]),
+  );
 }
 
 function CategoryTypeSelect({
@@ -93,7 +90,7 @@ export default async function CategoriesSettingsPage({
     redirect("/login");
   }
 
-  const [{ message }, { data: categories, error }, { data: documents }] =
+  const [{ message }, { data: categories, error }, { data: usageRows }] =
     await Promise.all([
       searchParams,
       supabase
@@ -101,11 +98,11 @@ export default async function CategoriesSettingsPage({
         .select("id, name, type, created_at")
         .order("type", { ascending: true })
         .order("name", { ascending: true }),
-      supabase.from("documents").select("category_id"),
+      supabase.rpc("get_category_usage_counts"),
     ]);
 
   const rows = (categories ?? []) as Category[];
-  const usageMap = countByCategory((documents ?? []) as DocumentReference[]);
+  const usageMap = mapCategoryUsage((usageRows ?? []) as CategoryUsage[]);
 
   return (
     <AppLayout>

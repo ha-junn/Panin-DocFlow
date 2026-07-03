@@ -208,8 +208,10 @@ export default async function DocumentDetailPage({
   }
 
   const timeline = (events ?? []) as unknown as DocumentEvent[];
-  const isTransferNote =
-    detail.category?.name.trim().toUpperCase() === "NOTA PEMINDAHAN";
+  const categoryName = detail.category?.name.trim().toUpperCase() ?? "";
+  const isTransferNote = categoryName === "NOTA PEMINDAHAN";
+  const isBpku = categoryName === "BPKU";
+  const hasDocumentAmountDetail = isTransferNote || isBpku;
 
   return (
     <AppLayout>
@@ -305,11 +307,23 @@ export default async function DocumentDetailPage({
                 <DetailItem label="Kategori" value={detail.category?.name} />
                 <DetailItem label="Perihal" value={detail.subject} />
                 <DetailItem
-                  label={isTransferNote ? "Keterangan" : "Nama karyawan"}
+                  label={
+                    isTransferNote
+                      ? "Keterangan Nota Pemindahan"
+                      : isBpku
+                        ? "Nama karyawan BPKU"
+                      : "Nama karyawan"
+                  }
                   value={detail.employee_name}
                 />
                 <DetailItem
-                  label={isTransferNote ? "Jumlah" : "Total"}
+                  label={
+                    isTransferNote
+                      ? "Jumlah Nota Pemindahan"
+                      : isBpku
+                        ? "Total BPKU"
+                        : "Total"
+                  }
                   value={formatCurrency(detail.amount)}
                 />
                 <DetailItem label="Pengirim" value={detail.sender_name} />
@@ -329,6 +343,75 @@ export default async function DocumentDetailPage({
                 />
               </div>
             </div>
+
+            {hasDocumentAmountDetail ? (
+              <div
+                className={[
+                  "rounded-lg border p-5 shadow-sm",
+                  isTransferNote
+                    ? "border-amber-200 bg-amber-50/60"
+                    : "border-[#0A3A60]/20 bg-[#0A3A60]/5",
+                ].join(" ")}
+              >
+                <div className="flex flex-wrap items-center gap-2">
+                  <h2 className="text-sm font-semibold text-slate-950">
+                    {isTransferNote ? "Rincian Nota Pemindahan" : "Rincian BPKU"}
+                  </h2>
+                  <span
+                    className={[
+                      "rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em]",
+                      isTransferNote
+                        ? "bg-amber-100 text-amber-800"
+                        : "bg-[#0A3A60]/10 text-[#0A3A60]",
+                    ].join(" ")}
+                  >
+                    {isTransferNote ? "Kategori Nota Pemindahan" : "Kategori BPKU"}
+                  </span>
+                </div>
+
+                <div className="mt-5 grid gap-4 md:grid-cols-[minmax(0,1fr)_220px]">
+                  <div
+                    className={[
+                      "rounded-lg border bg-white p-4",
+                      isTransferNote ? "border-amber-200" : "border-[#0A3A60]/20",
+                    ].join(" ")}
+                  >
+                    <p
+                      className={[
+                        "text-xs font-medium uppercase tracking-[0.12em]",
+                        isTransferNote ? "text-amber-700" : "text-[#0A3A60]",
+                      ].join(" ")}
+                    >
+                      {isTransferNote
+                        ? "Keterangan Nota Pemindahan"
+                        : "Nama Karyawan BPKU"}
+                    </p>
+                    <p className="mt-2 text-sm font-semibold leading-6 text-slate-950">
+                      {detail.employee_name || "-"}
+                    </p>
+                  </div>
+
+                  <div
+                    className={[
+                      "rounded-lg border bg-white p-4",
+                      isTransferNote ? "border-amber-200" : "border-[#0A3A60]/20",
+                    ].join(" ")}
+                  >
+                    <p
+                      className={[
+                        "text-xs font-medium uppercase tracking-[0.12em]",
+                        isTransferNote ? "text-amber-700" : "text-[#0A3A60]",
+                      ].join(" ")}
+                    >
+                      {isTransferNote ? "Jumlah" : "Total BPKU"}
+                    </p>
+                    <p className="mt-2 text-sm font-semibold leading-6 text-slate-950">
+                      {formatCurrency(detail.amount) || "-"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ) : null}
 
             <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
               <h2 className="text-sm font-semibold text-slate-950">Catatan</h2>

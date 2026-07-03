@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { jakartaDateToIso } from "@/lib/date";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { uppercaseText } from "@/lib/text";
 
@@ -64,10 +65,6 @@ function createAttachmentFileName(file: File) {
   }
 
   return `SK-${uploadStamp()}.${extension}`;
-}
-
-function dateToIso(value: string) {
-  return new Date(`${value}T00:00:00`).toISOString();
 }
 
 function collectOutgoingRows(formData: FormData) {
@@ -179,7 +176,7 @@ export async function createOutgoingLettersAction(formData: FormData) {
   }
 
   const payload = rows.map((row) => ({
-    sent_at: dateToIso(sentAt),
+    sent_at: jakartaDateToIso(sentAt),
     sender_staff: senderStaff,
     sender_department: senderDepartment,
     letter_number: row.letterNumber,
@@ -198,9 +195,16 @@ export async function createOutgoingLettersAction(formData: FormData) {
 
   if (error) {
     console.error("Failed to create outgoing letters", error);
-    const message = encodeURIComponent(
-      `Surat keluar gagal disimpan. Detail: ${error.message}`,
-    );
+    if (attachmentUrl) {
+      const { error: storageCleanupError } = await supabase.storage
+        .from("document-attachments")
+        .remove([attachmentUrl]);
+
+      if (storageCleanupError) {
+        console.error("Failed to rollback outgoing attachment", storageCleanupError);
+      }
+    }
+    const message = encodeURIComponent("Surat keluar gagal disimpan.");
 
     redirect(
       `/outgoing/new?message=${message}`,
@@ -257,9 +261,18 @@ export async function deleteOutgoingLetterAction(formData: FormData) {
       .limit(1);
 
     if (!remainingReferences || remainingReferences.length === 0) {
-      await supabase.storage
+      const { error: storageError } = await supabase.storage
         .from("document-attachments")
         .remove([outgoingLetter.attachment_url]);
+
+      if (storageError) {
+        console.error("Failed to remove outgoing letter attachment", storageError);
+        revalidatePath("/");
+        revalidatePath("/outgoing");
+        redirect(
+          "/outgoing?message=Surat keluar berhasil dihapus, tetapi lampiran gagal dihapus. Hubungi admin untuk pengecekan storage.",
+        );
+      }
     }
   }
 

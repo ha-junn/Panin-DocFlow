@@ -18,6 +18,11 @@ import { AppLayout } from "@/components/AppLayout";
 import { ConfirmSubmitButton } from "@/components/ConfirmSubmitButton";
 import { LoadingLink } from "@/components/LoadingLink";
 import { PendingSubmitButton } from "@/components/PendingSubmitButton";
+import {
+  getJakartaMonthDateRange,
+  getValidJakartaMonth,
+} from "@/lib/date";
+import { fetchAllRows } from "@/lib/supabase/pagination";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { cleanupDocumentsByMonthAction } from "./actions";
 
@@ -38,8 +43,6 @@ type CleanupDocument = {
   attachment_url: string | null;
 };
 
-const monthInputPattern = /^\d{4}-\d{2}$/;
-
 const monthFormatter = new Intl.DateTimeFormat("id-ID", {
   month: "long",
   year: "numeric",
@@ -50,46 +53,6 @@ const dateFormatter = new Intl.DateTimeFormat("id-ID", {
   month: "short",
   year: "numeric",
 });
-
-function getCurrentMonthValue() {
-  return new Date().toISOString().slice(0, 7);
-}
-
-function getValidMonth(value: string | undefined) {
-  if (!value || !monthInputPattern.test(value)) {
-    return getCurrentMonthValue();
-  }
-
-  const [yearText, monthText] = value.split("-");
-  const year = Number(yearText);
-  const month = Number(monthText);
-
-  if (
-    !Number.isInteger(year) ||
-    !Number.isInteger(month) ||
-    year < 2020 ||
-    year > 2100 ||
-    month < 1 ||
-    month > 12
-  ) {
-    return getCurrentMonthValue();
-  }
-
-  return value;
-}
-
-function getMonthRange(monthValue: string) {
-  const [yearText, monthText] = monthValue.split("-");
-  const year = Number(yearText);
-  const monthIndex = Number(monthText) - 1;
-  const start = new Date(Date.UTC(year, monthIndex, 1, 0, 0, 0));
-  const end = new Date(Date.UTC(year, monthIndex + 1, 1, 0, 0, 0));
-
-  return {
-    startIso: start.toISOString(),
-    endIso: end.toISOString(),
-  };
-}
 
 function formatMonthLabel(monthValue: string) {
   const [yearText, monthText] = monthValue.split("-");
@@ -219,19 +182,29 @@ export default async function CleanupSettingsPage({
   }
 
   const params = await searchParams;
-  const selectedMonth = getValidMonth(params.month);
-  const { startIso, endIso } = getMonthRange(selectedMonth);
+  const selectedMonth = getValidJakartaMonth(params.month);
+  const [yearText, monthText] = selectedMonth.split("-");
+  const { startIso, endIso } = getJakartaMonthDateRange(
+    Number(yearText),
+    Number(monthText),
+  );
 
-  const { data, error } = await supabase
-    .from("documents")
-    .select("id, agenda_number, type, received_at, sender_name, attachment_url")
-    .gte("received_at", startIso)
-    .lt("received_at", endIso)
-    .order("received_at", { ascending: false })
-    .order("created_at", { ascending: false })
-    .range(0, 4999);
+  const { data, error } = await fetchAllRows<CleanupDocument>(() =>
+    supabase
+      .from("documents")
+      .select("id, agenda_number, type, received_at, sender_name, attachment_url")
+      .gte("received_at", startIso)
+      .lt("received_at", endIso)
+      .order("received_at", { ascending: false })
+      .order("created_at", { ascending: false }) as unknown as {
+      range(
+        from: number,
+        to: number,
+      ): PromiseLike<{ data: CleanupDocument[] | null; error: { message: string } | null }>;
+    },
+  );
 
-  const documents = (data ?? []) as CleanupDocument[];
+  const documents = data;
   const documentCount = documents.filter((item) => item.type === "LETTER").length;
   const invoiceCount = documents.filter((item) => item.type === "INVOICE").length;
   const attachmentCount = documents.filter((item) => item.attachment_url).length;

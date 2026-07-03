@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { jakartaDateTimeLocalToIso } from "@/lib/date";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { uppercaseText } from "@/lib/text";
 
@@ -160,7 +161,7 @@ export async function updateDocumentAction(formData: FormData) {
   }
 
   const documentPayload = {
-    received_at: new Date(receivedAt).toISOString(),
+    received_at: jakartaDateTimeLocalToIso(receivedAt),
     sender_name: senderName,
     recipient_name: recipientName,
     department_id: departmentId,

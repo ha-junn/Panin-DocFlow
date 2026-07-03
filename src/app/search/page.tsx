@@ -16,6 +16,7 @@ import {
   validReceiptFilters,
   type ReceiptFilter,
 } from "@/lib/receipts";
+import { fetchAllRows } from "@/lib/supabase/pagination";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { SearchFilters } from "./SearchFilters";
 
@@ -196,45 +197,54 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
     : "";
   const currentPage = parsePage(params.page);
 
-  let documentsQuery = supabase
-    .from("documents")
-    .select(
-      `
-      id,
-      agenda_number,
-      type,
-      received_at,
-      sender_name,
-      recipient_name,
-      subject,
-      employee_name,
-      amount,
-      department:departments(name, code),
-      category:document_categories(name),
-      invoice_details(invoice_number, amount, internal_pic),
-      creator:profiles!documents_created_by_fkey(full_name)
-    `,
-    )
-    .order("created_at", { ascending: false })
-    .limit(200);
+  function createDocumentsQuery() {
+    let query = supabase
+      .from("documents")
+      .select(
+        `
+        id,
+        agenda_number,
+        type,
+        received_at,
+        sender_name,
+        recipient_name,
+        subject,
+        employee_name,
+        amount,
+        department:departments(name, code),
+        category:document_categories(name),
+        invoice_details(invoice_number, amount, internal_pic),
+        creator:profiles!documents_created_by_fkey(full_name)
+      `,
+      )
+      .order("created_at", { ascending: false });
 
-  if (type) {
-    documentsQuery = documentsQuery.eq("type", type);
+    if (type) {
+      query = query.eq("type", type);
+    }
+
+    if (category) {
+      query = query.eq("category_id", category);
+    }
+
+    return query as unknown as {
+      range(
+        from: number,
+        to: number,
+      ): PromiseLike<{ data: SearchDocument[] | null; error: { message: string } | null }>;
+    };
   }
 
-  if (category) {
-    documentsQuery = documentsQuery.eq("category_id", category);
-  }
-
-  const [{ data: documents, error }, { data: categories }] = await Promise.all([
-    documentsQuery,
+  const [documentsResult, { data: categories }] = await Promise.all([
+    fetchAllRows<SearchDocument>(createDocumentsQuery),
     supabase
       .from("document_categories")
       .select("id, name, type")
       .order("name", { ascending: true }),
   ]);
 
-  const candidateRows = (documents ?? []) as unknown as SearchDocument[];
+  const candidateRows = documentsResult.data;
+  const error = documentsResult.error;
   const receiptStatusMap = await fetchDocumentReceiptStatusMap(
     supabase,
     candidateRows.map((document) => document.id),
@@ -310,7 +320,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
           </div>
         </section>
 
-        <section className="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
           <SearchFilters
             key={`${keyword}-${type}-${category}-${receipt}`}
             keyword={keyword}
@@ -330,7 +340,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
               </p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto [-webkit-overflow-scrolling:touch]">
               <table className="w-full min-w-[1320px] border-separate border-spacing-0 text-left">
                 <thead>
                   <tr className="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -434,7 +444,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                                   : `/documents/${document.id}`
                               }
                               pendingLabel="Membuka..."
-                              className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-600 transition hover:border-[#0A3A60]/30 hover:bg-slate-50 hover:text-[#0A3A60]"
+                              className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-600 transition hover:border-[#0A3A60]/30 hover:bg-slate-50 hover:text-[#0A3A60]"
                             >
                               Detail
                               <ArrowUpRight className="size-4" aria-hidden="true" />

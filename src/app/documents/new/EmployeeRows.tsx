@@ -2,6 +2,7 @@
 
 import { Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
+import { RupiahInput } from "@/components/RupiahInput";
 
 type EmployeeRow = {
   id: string;
@@ -37,14 +38,12 @@ export function EmployeeRows() {
             name="employee_name"
             type="text"
             placeholder={`Nama karyawan ${index + 1}`}
-            className="h-11 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#0A3A60] focus:bg-white focus:ring-4 focus:ring-[#0A3A60]/10"
+            className="h-11 rounded-lg border border-[#0A3A60]/20 bg-white px-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#0A3A60] focus:ring-4 focus:ring-[#0A3A60]/10"
           />
-          <input
+          <RupiahInput
             name="document_amount"
-            type="text"
-            inputMode="numeric"
             placeholder="Contoh: Rp 150.000"
-            className="h-11 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#0A3A60] focus:bg-white focus:ring-4 focus:ring-[#0A3A60]/10"
+            className="h-11 rounded-lg border border-[#0A3A60]/20 bg-white px-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#0A3A60] focus:ring-4 focus:ring-[#0A3A60]/10"
           />
           <button
             type="button"
@@ -54,7 +53,7 @@ export function EmployeeRows() {
                 currentRows.filter((currentRow) => currentRow.id !== row.id),
               );
             }}
-            className="inline-flex h-11 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition hover:border-red-200 hover:bg-red-50 hover:text-[#D71920] disabled:cursor-not-allowed disabled:opacity-40 md:w-11"
+            className="inline-flex h-11 items-center justify-center rounded-lg border border-[#0A3A60]/20 bg-white text-slate-500 transition hover:border-red-200 hover:bg-red-50 hover:text-[#D71920] disabled:cursor-not-allowed disabled:opacity-40 md:w-11"
             aria-label="Hapus baris karyawan"
             title="Hapus baris"
           >
@@ -66,7 +65,7 @@ export function EmployeeRows() {
       <button
         type="button"
         onClick={() => setRows((currentRows) => [...currentRows, createRow()])}
-        className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 transition hover:border-[#0A3A60]/30 hover:bg-slate-50"
+        className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-[#0A3A60]/20 bg-white px-3 text-sm font-semibold text-[#0A3A60] transition hover:border-[#0A3A60]/30 hover:bg-[#0A3A60]/5"
       >
         <Plus className="size-4" aria-hidden="true" />
         Tambah Baris Karyawan

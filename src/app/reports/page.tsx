@@ -14,6 +14,12 @@ import {
 import { AppLayout } from "@/components/AppLayout";
 import { LoadingLink } from "@/components/LoadingLink";
 import { PendingSubmitButton } from "@/components/PendingSubmitButton";
+import {
+  getDefaultJakartaDateRange,
+  getJakartaDateRange,
+  isValidDateInput,
+} from "@/lib/date";
+import { fetchAllRows } from "@/lib/supabase/pagination";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 type ReportsPageProps = {
@@ -71,22 +77,8 @@ const dateFormatter = new Intl.DateTimeFormat("id-ID", {
   day: "2-digit",
   month: "short",
   year: "numeric",
+  timeZone: "Asia/Jakarta",
 });
-
-function isValidDateInput(value: string) {
-  return /^\d{4}-\d{2}-\d{2}$/.test(value);
-}
-
-function getDefaultDateRange() {
-  const now = new Date();
-  const start = new Date(now.getFullYear(), now.getMonth(), 1);
-  const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-
-  return {
-    from: start.toISOString().slice(0, 10),
-    to: end.toISOString().slice(0, 10),
-  };
-}
 
 function getValidMonth(value: string | undefined) {
   const month = Number(value);
@@ -250,7 +242,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
     redirect("/login");
   }
 
-  const defaults = getDefaultDateRange();
+  const defaults = getDefaultJakartaDateRange();
   const params = await searchParams;
   const dateFrom = isValidDateInput(String(params.date_from ?? ""))
     ? String(params.date_from)
@@ -263,46 +255,55 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
   const category = String(params.category ?? "").trim();
   const selectedBackupMonth = getValidMonth(params.backup_month);
   const selectedBackupYear = getValidYear(params.backup_year);
+  const { startIso, endExclusiveIso } = getJakartaDateRange(dateFrom, dateTo);
 
-  let documentsQuery = supabase
-    .from("documents")
-    .select(
-      `
-      id,
-      agenda_number,
-      type,
-      received_at,
-      sender_name,
-      recipient_name,
-      subject,
-      department:departments(name, code),
-      category:document_categories(name),
-      invoice_details(invoice_number, internal_pic)
-    `,
-    )
-    .gte("received_at", `${dateFrom}T00:00:00`)
-    .lte("received_at", `${dateTo}T23:59:59`)
-    .order("received_at", { ascending: false })
-    .limit(300);
+  function createDocumentsQuery() {
+    let query = supabase
+      .from("documents")
+      .select(
+        `
+        id,
+        agenda_number,
+        type,
+        received_at,
+        sender_name,
+        recipient_name,
+        subject,
+        department:departments(name, code),
+        category:document_categories(name),
+        invoice_details(invoice_number, internal_pic)
+      `,
+      )
+      .gte("received_at", startIso)
+      .lt("received_at", endExclusiveIso)
+      .order("received_at", { ascending: false });
 
-  if (type) {
-    documentsQuery = documentsQuery.eq("type", type);
-  }
+    if (type) {
+      query = query.eq("type", type);
+    }
 
-  if (department) {
-    documentsQuery = documentsQuery.eq("department_id", department);
-  }
+    if (department) {
+      query = query.eq("department_id", department);
+    }
 
-  if (category) {
-    documentsQuery = documentsQuery.eq("category_id", category);
+    if (category) {
+      query = query.eq("category_id", category);
+    }
+
+    return query as unknown as {
+      range(
+        from: number,
+        to: number,
+      ): PromiseLike<{ data: ReportDocument[] | null; error: { message: string } | null }>;
+    };
   }
 
   const [
-    { data: documents, error },
+    documentsResult,
     { data: departments },
     { data: categories },
   ] = await Promise.all([
-    documentsQuery,
+    fetchAllRows<ReportDocument>(createDocumentsQuery),
     supabase
       .from("departments")
       .select("id, name, code")
@@ -313,7 +314,8 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
       .order("name", { ascending: true }),
   ]);
 
-  const rows = (documents ?? []) as unknown as ReportDocument[];
+  const rows = documentsResult.data;
+  const error = documentsResult.error;
   const departmentOptions = (departments ?? []) as Department[];
   const categoryOptions = (categories ?? []) as Category[];
   const documentCount = rows.filter((item) => item.type === "LETTER").length;
@@ -333,6 +335,10 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
     department,
     category,
   });
+  const reportStartLabel = formatDate(startIso);
+  const reportEndLabel = formatDate(
+    new Date(new Date(endExclusiveIso).getTime() - 1).toISOString(),
+  );
 
   return (
     <AppLayout>
@@ -504,14 +510,13 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
           />
         </section>
 
-        <section className="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
           <div className="border-b border-slate-200 p-5">
             <p className="text-sm font-semibold text-slate-950">
               Detail Hasil Laporan
             </p>
             <p className="mt-1 text-sm text-slate-500">
-              Periode {formatDate(`${dateFrom}T00:00:00`)} sampai{" "}
-              {formatDate(`${dateTo}T23:59:59`)}.
+              Periode {reportStartLabel} sampai {reportEndLabel}.
             </p>
           </div>
 
@@ -525,7 +530,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
               </p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto [-webkit-overflow-scrolling:touch]">
               <table className="w-full min-w-[1040px] border-separate border-spacing-0 text-left">
                 <thead>
                   <tr className="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -608,7 +613,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
                                   : `/documents/${document.id}`
                               }
                               pendingLabel="Membuka..."
-                              className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-600 transition hover:border-[#0A3A60]/30 hover:bg-slate-50 hover:text-[#0A3A60]"
+                              className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-600 transition hover:border-[#0A3A60]/30 hover:bg-slate-50 hover:text-[#0A3A60]"
                             >
                               Detail
                               <FileText className="size-4" aria-hidden="true" />

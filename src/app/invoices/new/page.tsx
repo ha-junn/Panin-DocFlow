@@ -3,9 +3,9 @@ import {
   ArrowLeft,
   CalendarClock,
   ClipboardList,
+  FileText,
   Paperclip,
   Save,
-  UserRound,
 } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
 import { CompressedAttachmentInput } from "@/components/CompressedAttachmentInput";
@@ -14,6 +14,10 @@ import { PendingSubmitButton } from "@/components/PendingSubmitButton";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createInvoiceBatchAction } from "./actions";
 import { InvoiceRows } from "./InvoiceRows";
+import {
+  VendorPicFields,
+  type VendorPicSuggestion,
+} from "./VendorPicFields";
 
 type NewInvoicePageProps = {
   searchParams: Promise<{
@@ -33,9 +37,59 @@ type Category = {
   type: "INVOICE" | "BOTH";
 };
 
+type VendorPicDocument = {
+  sender_name: string | null;
+  recipient_name: string | null;
+  invoice_details:
+    | {
+        internal_pic: string | null;
+      }
+    | {
+        internal_pic: string | null;
+      }[]
+    | null;
+};
+
 function toDateInputValue(date: Date) {
   const offsetMs = date.getTimezoneOffset() * 60_000;
   return new Date(date.getTime() - offsetMs).toISOString().slice(0, 10);
+}
+
+function getInvoiceDetail(details: VendorPicDocument["invoice_details"]) {
+  if (Array.isArray(details)) {
+    return details[0] ?? null;
+  }
+
+  return details;
+}
+
+function normalizeText(value: string) {
+  return value.trim().toLocaleUpperCase("id-ID").replace(/\s+/g, " ");
+}
+
+function buildVendorPicSuggestions(
+  documents: VendorPicDocument[],
+): VendorPicSuggestion[] {
+  const vendorPicByName = new Map<string, VendorPicSuggestion>();
+
+  documents.forEach((document) => {
+    const vendor = normalizeText(document.sender_name ?? "");
+    const pic = normalizeText(
+      getInvoiceDetail(document.invoice_details)?.internal_pic ??
+        document.recipient_name ??
+        "",
+    );
+
+    if (!vendor || !pic || vendorPicByName.has(vendor)) {
+      return;
+    }
+
+    vendorPicByName.set(vendor, { vendor, pic });
+  });
+
+  return Array.from(vendorPicByName.values()).sort((a, b) =>
+    a.vendor.localeCompare(b.vendor, "id-ID"),
+  );
 }
 
 export default async function NewInvoicePage({
@@ -50,7 +104,12 @@ export default async function NewInvoicePage({
     redirect("/login");
   }
 
-  const [{ data: departments }, { data: categories }, params] = await Promise.all([
+  const [
+    { data: departments },
+    { data: categories },
+    { data: vendorPicDocuments },
+    params,
+  ] = await Promise.all([
     supabase
       .from("departments")
       .select("id, name, code")
@@ -61,6 +120,18 @@ export default async function NewInvoicePage({
       .select("id, name, type")
       .in("type", ["INVOICE", "BOTH"])
       .order("name", { ascending: true }),
+    supabase
+      .from("documents")
+      .select(
+        `
+        sender_name,
+        recipient_name,
+        invoice_details(internal_pic)
+      `,
+      )
+      .eq("type", "INVOICE")
+      .order("created_at", { ascending: false })
+      .limit(500),
     searchParams,
   ]);
 
@@ -74,6 +145,9 @@ export default async function NewInvoicePage({
     categoryOptions.find(
       (category) => category.name.trim().toLowerCase() === "vendor",
     )?.id ?? "";
+  const vendorPicSuggestions = buildVendorPicSuggestions(
+    (vendorPicDocuments ?? []) as unknown as VendorPicDocument[],
+  );
 
   return (
     <AppLayout>
@@ -81,14 +155,24 @@ export default async function NewInvoicePage({
         <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <LoadingLink
-                href="/"
-                pendingLabel="Kembali..."
-                className="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 transition hover:text-[#0A3A60]"
-              >
-                <ArrowLeft className="size-4" aria-hidden="true" />
-                Kembali ke dashboard
-              </LoadingLink>
+              <div className="flex flex-wrap items-center gap-2">
+                <LoadingLink
+                  href="/"
+                  pendingLabel="Kembali..."
+                  className="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 transition hover:text-[#0A3A60]"
+                >
+                  <ArrowLeft className="size-4" aria-hidden="true" />
+                  Kembali ke dashboard
+                </LoadingLink>
+                <LoadingLink
+                  href="/documents/new?type=letter"
+                  pendingLabel="Membuka dokumen..."
+                  className="inline-flex h-9 items-center gap-2 rounded-full border border-[#0A3A60]/20 bg-[#0A3A60]/5 px-3 text-xs font-semibold text-[#0A3A60] transition hover:border-[#0A3A60]/30 hover:bg-[#0A3A60]/10"
+                >
+                  <FileText className="size-3.5" aria-hidden="true" />
+                  Tambah Dokumen
+                </LoadingLink>
+              </div>
               <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-[#D71920]/15 bg-[#D71920]/5 px-3 py-1 text-xs font-semibold text-[#B9151B]">
                 <ClipboardList className="size-3.5" aria-hidden="true" />
                 Invoice Masuk
@@ -126,7 +210,7 @@ export default async function NewInvoicePage({
         >
           <section className="space-y-6 rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
             <div className="grid gap-5 md:grid-cols-2">
-              <label className="block">
+              <label className="block md:col-span-2">
                 <span className="flex items-center gap-2 text-sm font-medium text-slate-700">
                   <CalendarClock className="size-4 text-slate-400" />
                   Tanggal diterima
@@ -140,18 +224,7 @@ export default async function NewInvoicePage({
                 />
               </label>
 
-              <label className="block">
-                <span className="text-sm font-medium text-slate-700">
-                  Vendor/pengirim
-                </span>
-                <input
-                  name="vendor_name"
-                  type="text"
-                  required
-                  placeholder="Contoh: PT Nata Surya Cemerlang"
-                  className="mt-1.5 h-11 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#0A3A60] focus:bg-white focus:ring-4 focus:ring-[#0A3A60]/10"
-                />
-              </label>
+              <VendorPicFields suggestions={vendorPicSuggestions} />
 
               <label className="block">
                 <span className="text-sm font-medium text-slate-700">
@@ -189,20 +262,6 @@ export default async function NewInvoicePage({
                     </option>
                   ))}
                 </select>
-              </label>
-
-              <label className="block">
-                <span className="flex items-center gap-2 text-sm font-medium text-slate-700">
-                  <UserRound className="size-4 text-slate-400" />
-                  PIC/penerima internal
-                </span>
-                <input
-                  name="internal_pic"
-                  type="text"
-                  required
-                  placeholder="Nama PIC internal"
-                  className="mt-1.5 h-11 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#0A3A60] focus:bg-white focus:ring-4 focus:ring-[#0A3A60]/10"
-                />
               </label>
 
             </div>

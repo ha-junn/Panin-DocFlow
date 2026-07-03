@@ -1,4 +1,10 @@
 import { NextResponse } from "next/server";
+import {
+  getDefaultJakartaDateRange,
+  getJakartaDateRange,
+  isValidDateInput,
+} from "@/lib/date";
+import { fetchAllRows } from "@/lib/supabase/pagination";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 type DbDocumentType = "LETTER" | "INVOICE";
@@ -19,21 +25,6 @@ type ReportDocument = {
   category: { name: string } | null;
   invoice_details: InvoiceDetail | InvoiceDetail[] | null;
 };
-
-function isValidDateInput(value: string | null) {
-  return value ? /^\d{4}-\d{2}-\d{2}$/.test(value) : false;
-}
-
-function getDefaultDateRange() {
-  const now = new Date();
-  const start = new Date(now.getFullYear(), now.getMonth(), 1);
-  const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-
-  return {
-    from: start.toISOString().slice(0, 10),
-    to: end.toISOString().slice(0, 10),
-  };
-}
 
 function getInvoiceDetail(details: ReportDocument["invoice_details"]) {
   if (Array.isArray(details)) {
@@ -63,59 +54,70 @@ export async function GET(request: Request) {
   }
 
   const url = new URL(request.url);
-  const defaults = getDefaultDateRange();
+  const defaults = getDefaultJakartaDateRange();
   const dateFrom = isValidDateInput(url.searchParams.get("date_from"))
     ? String(url.searchParams.get("date_from"))
     : defaults.from;
   const dateTo = isValidDateInput(url.searchParams.get("date_to"))
     ? String(url.searchParams.get("date_to"))
     : defaults.to;
-
-  let query = supabase
-    .from("documents")
-    .select(
-      `
-      agenda_number,
-      type,
-      received_at,
-      sender_name,
-      recipient_name,
-      subject,
-      department:departments(name, code),
-      category:document_categories(name),
-      invoice_details(invoice_number, internal_pic)
-    `,
-    )
-    .gte("received_at", `${dateFrom}T00:00:00`)
-    .lte("received_at", `${dateTo}T23:59:59`)
-    .order("received_at", { ascending: true });
+  const { startIso, endExclusiveIso } = getJakartaDateRange(dateFrom, dateTo);
 
   const type = url.searchParams.get("type");
   const department = url.searchParams.get("department");
   const category = url.searchParams.get("category");
 
-  if (type === "LETTER" || type === "INVOICE") {
-    query = query.eq("type", type);
+  function createReportQuery() {
+    let query = supabase
+      .from("documents")
+      .select(
+        `
+        agenda_number,
+        type,
+        received_at,
+        sender_name,
+        recipient_name,
+        subject,
+        department:departments(name, code),
+        category:document_categories(name),
+        invoice_details(invoice_number, internal_pic)
+      `,
+      )
+      .gte("received_at", startIso)
+      .lt("received_at", endExclusiveIso)
+      .order("received_at", { ascending: true });
+
+    if (type === "LETTER" || type === "INVOICE") {
+      query = query.eq("type", type);
+    }
+
+    if (department) {
+      query = query.eq("department_id", department);
+    }
+
+    if (category) {
+      query = query.eq("category_id", category);
+    }
+
+    return query as unknown as {
+      range(
+        from: number,
+        to: number,
+      ): PromiseLike<{ data: ReportDocument[] | null; error: { message: string } | null }>;
+    };
   }
 
-  if (department) {
-    query = query.eq("department_id", department);
-  }
-
-  if (category) {
-    query = query.eq("category_id", category);
-  }
-
-  const { data, error } = await query;
+  const { data, error } = await fetchAllRows<ReportDocument>(createReportQuery);
 
   if (error) {
+    console.error("Report export failed", error);
     return NextResponse.json(
-      { message: "Report export failed", error: error.message },
+      { message: "Report export failed" },
       { status: 500 },
     );
   }
 
-  const documents = (data ?? []) as unknown as ReportDocument[];
+  const documents = data;
   const headers = [
     "Nomor Agenda",
     "Jenis",

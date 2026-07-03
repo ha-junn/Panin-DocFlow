@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import {
   ArrowLeft,
   CalendarClock,
+  ClipboardList,
   FileText,
   Paperclip,
   Save,
@@ -85,14 +86,24 @@ export default async function NewDocumentPage({
         <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <LoadingLink
-                href="/"
-                pendingLabel="Kembali..."
-                className="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 transition hover:text-[#0A3A60]"
-              >
-                <ArrowLeft className="size-4" aria-hidden="true" />
-                Kembali ke dashboard
-              </LoadingLink>
+              <div className="flex flex-wrap items-center gap-2">
+                <LoadingLink
+                  href="/"
+                  pendingLabel="Kembali..."
+                  className="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 transition hover:text-[#0A3A60]"
+                >
+                  <ArrowLeft className="size-4" aria-hidden="true" />
+                  Kembali ke dashboard
+                </LoadingLink>
+                <LoadingLink
+                  href="/invoices/new"
+                  pendingLabel="Membuka invoice..."
+                  className="inline-flex h-9 items-center gap-2 rounded-full border border-[#D71920]/20 bg-[#D71920]/5 px-3 text-xs font-semibold text-[#B9151B] transition hover:border-[#D71920]/30 hover:bg-[#D71920]/10"
+                >
+                  <ClipboardList className="size-3.5" aria-hidden="true" />
+                  Tambah Invoice
+                </LoadingLink>
+              </div>
               <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-[#0A3A60]/15 bg-[#0A3A60]/5 px-3 py-1 text-xs font-semibold text-[#0A3A60]">
                 <FileText className="size-3.5" aria-hidden="true" />
                 Dokumen
@@ -174,18 +185,6 @@ export default async function NewDocumentPage({
                 categories={categoryOptions}
               />
 
-              <label className="block">
-                <span className="text-sm font-medium text-slate-700">
-                  Nomor surat
-                </span>
-                <input
-                  name="letter_number"
-                  type="text"
-                  placeholder="Opsional"
-                  className="mt-1.5 h-11 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#0A3A60] focus:bg-white focus:ring-4 focus:ring-[#0A3A60]/10"
-                />
-              </label>
-
               <label className="block md:col-span-2">
                 <span className="text-sm font-medium text-slate-700">
                   Perihal
@@ -199,10 +198,25 @@ export default async function NewDocumentPage({
               </label>
 
               <div className="md:col-span-2">
+                <PendingSubmitButton
+                  className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-[#0A3A60] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#082f4f] focus:outline-none focus:ring-4 focus:ring-[#0A3A60]/20"
+                  pendingLabel="Menyimpan surat..."
+                >
+                  <Save className="size-4" aria-hidden="true" />
+                  Simpan Surat
+                </PendingSubmitButton>
+              </div>
+
+              <div className="md:col-span-2 rounded-xl border border-[#0A3A60]/20 bg-[#0A3A60]/5 p-4">
                 <div className="mb-4">
-                  <h2 className="text-sm font-semibold text-slate-950">
-                    Daftar karyawan BPKU
-                  </h2>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h2 className="text-sm font-semibold text-slate-950">
+                      Daftar karyawan BPKU
+                    </h2>
+                    <span className="rounded-full bg-[#0A3A60]/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[#0A3A60]">
+                      Khusus kategori BPKU
+                    </span>
+                  </div>
                   <p className="mt-1 text-sm text-slate-500">
                     Opsional. Gunakan untuk BPKU, lembur, transport, atau
                     dokumen lain yang berisi beberapa nama karyawan.

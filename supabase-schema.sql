@@ -82,7 +82,7 @@ create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   full_name text not null,
   email text not null,
-  role public.app_role not null default 'ADMIN',
+  role public.app_role not null default 'RECEPTIONIST',
   department_id uuid references public.departments(id) on delete set null,
   avatar_url text,
   created_at timestamptz not null default now(),
@@ -701,7 +701,7 @@ begin
     new.id,
     coalesce(new.raw_user_meta_data ->> 'full_name', split_part(new.email, '@', 1), 'User Baru'),
     new.email,
-    'ADMIN'
+    'RECEPTIONIST'
   )
   on conflict (id) do nothing;
 
@@ -1099,8 +1099,9 @@ values (
   10485760,
   array[
     'application/pdf',
-    'image/jpeg',
-    'image/png'
+	    'image/jpeg',
+	    'image/png',
+	    'image/webp'
   ]
 )
 on conflict (id) do update
@@ -1211,6 +1212,12 @@ end $$;
 
 grant usage on schema public to authenticated;
 grant select, insert, update, delete on all tables in schema public to authenticated;
-grant execute on all functions in schema public to authenticated;
+revoke execute on all functions in schema public from public, anon, authenticated;
+grant execute on function public.current_profile_role() to authenticated;
+grant execute on function public.is_admin() to authenticated;
+grant execute on function public.is_receptionist() to authenticated;
+grant execute on function public.get_dashboard_summary() to authenticated;
+grant execute on function public.get_weekly_document_trend() to authenticated;
+grant execute on function public.get_recent_document_activity(integer) to authenticated;
 
 commit;

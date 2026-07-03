@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { getJakartaMonthDateRange } from "@/lib/date";
+import { fetchAllRows } from "@/lib/supabase/pagination";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 type DbDocumentType = "LETTER" | "INVOICE";
@@ -36,15 +38,6 @@ function getValidYear(value: string | null) {
     : new Date().getFullYear();
 }
 
-function getMonthRange(year: number, month: number) {
-  const start = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0));
-  const end = new Date(Date.UTC(year, month, 1, 0, 0, 0));
-  return {
-    startIso: start.toISOString(),
-    endIso: end.toISOString(),
-  };
-}
-
 function getInvoiceDetail(details: ExportDocument["invoice_details"]) {
   if (Array.isArray(details)) {
     return details[0] ?? null;
@@ -75,37 +68,45 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const month = getValidMonth(url.searchParams.get("month"));
   const year = getValidYear(url.searchParams.get("year"));
-  const { startIso, endIso } = getMonthRange(year, month);
+  const { startIso, endIso } = getJakartaMonthDateRange(year, month);
 
-  const { data, error } = await supabase
-    .from("documents")
-    .select(
-      `
-      agenda_number,
-      type,
-      received_at,
-      sender_name,
-      recipient_name,
-      subject,
-      notes,
-      attachment_url,
-      department:departments(name, code),
-      category:document_categories(name),
-      invoice_details(invoice_number, internal_pic)
-    `,
-    )
-    .gte("received_at", startIso)
-    .lt("received_at", endIso)
-    .order("received_at", { ascending: true });
+  const { data, error } = await fetchAllRows<ExportDocument>(() =>
+    supabase
+      .from("documents")
+      .select(
+        `
+        agenda_number,
+        type,
+        received_at,
+        sender_name,
+        recipient_name,
+        subject,
+        notes,
+        attachment_url,
+        department:departments(name, code),
+        category:document_categories(name),
+        invoice_details(invoice_number, internal_pic)
+      `,
+      )
+      .gte("received_at", startIso)
+      .lt("received_at", endIso)
+      .order("received_at", { ascending: true }) as unknown as {
+      range(
+        from: number,
+        to: number,
+      ): PromiseLike<{ data: ExportDocument[] | null; error: { message: string } | null }>;
+    },
+  );
 
   if (error) {
+    console.error("Backup export failed", error);
     return NextResponse.json(
-      { message: "Backup export failed", error: error.message },
+      { message: "Backup export failed" },
       { status: 500 },
     );
   }
 
-  const documents = (data ?? []) as unknown as ExportDocument[];
+  const documents = data;
   const headers = [
     "Nomor Agenda",
     "Jenis",

@@ -21,8 +21,12 @@ export function ConfirmSubmitButton({
   return (
     <button
       type="submit"
-      className={className}
+      className={[
+        className,
+        "disabled:cursor-not-allowed disabled:opacity-70 disabled:shadow-none",
+      ].join(" ")}
       disabled={pending}
+      aria-busy={pending}
       onClick={(event) => {
         if (pending) {
           event.preventDefault();

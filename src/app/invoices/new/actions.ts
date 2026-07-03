@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { jakartaDateToIso } from "@/lib/date";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { uppercaseText } from "@/lib/text";
 
@@ -66,10 +67,6 @@ function parseAmount(value: string) {
   }
 
   return amount;
-}
-
-function receivedDateToIso(value: string) {
-  return new Date(`${value}T00:00:00`).toISOString();
 }
 
 function createAutomaticInvoiceNumber(receivedAt: string) {
@@ -175,6 +172,30 @@ export async function createInvoiceBatchAction(formData: FormData) {
   }
 
   let attachmentUrl: string | null = null;
+  const createdDocumentIds: string[] = [];
+
+  async function cleanupCreatedRows() {
+    if (createdDocumentIds.length > 0) {
+      const { error: cleanupError } = await supabase
+        .from("documents")
+        .delete()
+        .in("id", createdDocumentIds);
+
+      if (cleanupError) {
+        console.error("Failed to rollback invoice documents", cleanupError);
+      }
+    }
+
+    if (attachmentUrl) {
+      const { error: storageCleanupError } = await supabase.storage
+        .from("document-attachments")
+        .remove([attachmentUrl]);
+
+      if (storageCleanupError) {
+        console.error("Failed to rollback invoice attachment", storageCleanupError);
+      }
+    }
+  }
 
   if (attachment instanceof File && attachment.size > 0) {
     if (!ALLOWED_ATTACHMENT_TYPES.has(attachment.type)) {
@@ -214,7 +235,7 @@ export async function createInvoiceBatchAction(formData: FormData) {
       .from("documents")
       .insert({
         type: "INVOICE",
-        received_at: receivedDateToIso(receivedAt),
+        received_at: jakartaDateToIso(receivedAt),
         sender_name: vendorName,
         recipient_name: internalPic,
         department_id: departmentId,
@@ -230,8 +251,11 @@ export async function createInvoiceBatchAction(formData: FormData) {
 
     if (documentError || !document) {
       console.error("Failed to create invoice document", documentError);
+      await cleanupCreatedRows();
       redirect("/invoices/new?message=Gagal menyimpan salah satu dokumen invoice.");
     }
+
+    createdDocumentIds.push(document.id);
 
     if (!item.invoiceNumber && !item.amount) {
       continue;
@@ -246,6 +270,7 @@ export async function createInvoiceBatchAction(formData: FormData) {
 
     if (detailError) {
       console.error("Failed to create invoice detail", detailError);
+      await cleanupCreatedRows();
       redirect("/invoices/new?message=Gagal menyimpan detail invoice.");
     }
   }

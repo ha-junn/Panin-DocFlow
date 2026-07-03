@@ -51,7 +51,11 @@ export function LoadingLink({
       {...props}
       target={target}
       aria-busy={isPending}
-      className={[className, isPending ? "pointer-events-none opacity-80" : ""]
+      aria-disabled={isPending || undefined}
+      className={[
+        className,
+        isPending ? "pointer-events-none cursor-wait opacity-80" : "",
+      ]
         .filter(Boolean)
         .join(" ")}
       onClick={(event) => {

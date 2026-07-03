@@ -35,18 +35,15 @@ type Department = {
   created_at: string;
 };
 
-type DocumentReference = {
-  department_id: string | null;
+type DepartmentUsage = {
+  department_id: string;
+  document_count: number;
 };
 
-function countByDepartment(documents: DocumentReference[]) {
-  return documents.reduce<Record<string, number>>((accumulator, document) => {
-    if (document.department_id) {
-      accumulator[document.department_id] = (accumulator[document.department_id] ?? 0) + 1;
-    }
-
-    return accumulator;
-  }, {});
+function mapDepartmentUsage(rows: DepartmentUsage[] | null) {
+  return Object.fromEntries(
+    (rows ?? []).map((row) => [row.department_id, Number(row.document_count)]),
+  );
 }
 
 export default async function DepartmentsSettingsPage({
@@ -61,18 +58,18 @@ export default async function DepartmentsSettingsPage({
     redirect("/login");
   }
 
-  const [{ message }, { data: departments, error }, { data: documents }] =
+  const [{ message }, { data: departments, error }, { data: usageRows }] =
     await Promise.all([
       searchParams,
       supabase
         .from("departments")
         .select("id, name, code, created_at")
         .order("name", { ascending: true }),
-      supabase.from("documents").select("department_id"),
+      supabase.rpc("get_department_usage_counts"),
     ]);
 
   const rows = (departments ?? []) as Department[];
-  const usageMap = countByDepartment((documents ?? []) as DocumentReference[]);
+  const usageMap = mapDepartmentUsage((usageRows ?? []) as DepartmentUsage[]);
 
   return (
     <AppLayout>

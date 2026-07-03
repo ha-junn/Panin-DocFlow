@@ -24,7 +24,7 @@ export function SuccessToast({ title, message }: SuccessToastProps) {
   return (
     <div
       role="status"
-      className="fixed right-5 top-5 z-50 flex w-[calc(100vw-2.5rem)] max-w-sm gap-3 rounded-lg border border-emerald-200 bg-white p-4 text-sm shadow-lg shadow-slate-900/10"
+      className="animate-toast-in fixed left-4 right-4 top-4 z-50 flex gap-3 rounded-lg border border-emerald-200 bg-white p-4 text-sm shadow-xl shadow-slate-900/10 sm:left-auto sm:right-5 sm:top-5 sm:w-[calc(100vw-2.5rem)] sm:max-w-sm"
     >
       <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700">
         <CheckCircle2 className="size-5" aria-hidden="true" />

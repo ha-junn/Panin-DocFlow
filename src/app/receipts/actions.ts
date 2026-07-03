@@ -8,6 +8,8 @@ import { uppercaseText } from "@/lib/text";
 type ReceiptTargetType = "DOCUMENT" | "INVOICE" | "OUTGOING";
 type IncomingReceiptKind = "DOCUMENT" | "INVOICE";
 const validOutgoingDeliverySections = new Set(["Ekspedisi", "Mailing Room"]);
+const MAX_SIGNATURE_DATA_LENGTH = 300000;
+const signatureDataPattern = /^data:image\/png;base64,[A-Za-z0-9+/=]+$/;
 
 function formString(formData: FormData, key: string) {
   return String(formData.get(key) ?? "").trim();
@@ -64,6 +66,14 @@ function isOutgoingDeliveryContact(contact: {
 
 function isMissingRelationError(error: { code?: string } | null) {
   return Boolean(error && ["42P01", "PGRST205"].includes(error.code ?? ""));
+}
+
+function isValidSignatureData(value: string) {
+  return (
+    !value ||
+    (value.length <= MAX_SIGNATURE_DATA_LENGTH &&
+      signatureDataPattern.test(value))
+  );
 }
 
 export async function createReceiptRequestAction(formData: FormData) {
@@ -143,7 +153,7 @@ export async function createReceiptRequestAction(formData: FormData) {
     redirect(
       withMessage(
         returnTo,
-        `Tanda terima gagal dibuat. Detail: ${error.message}`,
+        "Tanda terima gagal dibuat. Coba ulangi atau hubungi admin.",
       ),
     );
   }
@@ -305,14 +315,12 @@ export async function createBatchReceiptAction(formData: FormData) {
 
   if (batchError || !batch) {
     console.error("Failed to create receipt batch", batchError);
-    redirect(
-      withMessage(
-        returnTo,
-        `Tanda terima gabungan gagal dibuat. Detail: ${
-          batchError?.message ?? "Data batch tidak tersedia."
-        }`,
-      ),
-    );
+      redirect(
+        withMessage(
+          returnTo,
+          "Tanda terima gabungan gagal dibuat. Coba ulangi atau hubungi admin.",
+        ),
+      );
   }
 
   const { error: itemsError } = await supabase
@@ -327,12 +335,12 @@ export async function createBatchReceiptAction(formData: FormData) {
   if (itemsError) {
     await supabase.from("receipt_batches").delete().eq("id", batch.id);
     console.error("Failed to create receipt batch items", itemsError);
-    redirect(
-      withMessage(
-        returnTo,
-        `Item tanda terima gabungan gagal disimpan. Detail: ${itemsError.message}`,
-      ),
-    );
+      redirect(
+        withMessage(
+          returnTo,
+          "Item tanda terima gabungan gagal disimpan. Coba ulangi atau hubungi admin.",
+        ),
+      );
   }
 
   revalidatePath("/receipts");
@@ -484,14 +492,12 @@ export async function createOutgoingBatchReceiptAction(formData: FormData) {
 
   if (batchError || !batch) {
     console.error("Failed to create outgoing receipt batch", batchError);
-    redirect(
-      withMessage(
-        returnTo,
-        `Tanda terima surat keluar gagal dibuat. Detail: ${
-          batchError?.message ?? "Data batch tidak tersedia."
-        }`,
-      ),
-    );
+      redirect(
+        withMessage(
+          returnTo,
+          "Tanda terima surat keluar gagal dibuat. Coba ulangi atau hubungi admin.",
+        ),
+      );
   }
 
   const { error: itemsError } = await supabase
@@ -506,12 +512,12 @@ export async function createOutgoingBatchReceiptAction(formData: FormData) {
   if (itemsError) {
     await supabase.from("outgoing_receipt_batches").delete().eq("id", batch.id);
     console.error("Failed to create outgoing receipt batch items", itemsError);
-    redirect(
-      withMessage(
-        returnTo,
-        `Item tanda terima surat keluar gagal disimpan. Detail: ${itemsError.message}`,
-      ),
-    );
+      redirect(
+        withMessage(
+          returnTo,
+          "Item tanda terima surat keluar gagal disimpan. Coba ulangi atau hubungi admin.",
+        ),
+      );
   }
 
   revalidatePath("/receipts");
@@ -547,6 +553,14 @@ export async function confirmReceiptAction(formData: FormData) {
     );
   }
 
+  if (!isValidSignatureData(signatureData)) {
+    redirect(
+      `/receipt/${token}?message=${encodeURIComponent(
+        "Format tanda tangan tidak valid. Bersihkan tanda tangan lalu coba lagi.",
+      )}`,
+    );
+  }
+
   const { error } = await supabase.rpc("confirm_receipt_by_token", {
     p_token: token,
     p_recipient_name: recipientName,
@@ -559,7 +573,7 @@ export async function confirmReceiptAction(formData: FormData) {
     console.error("Failed to confirm receipt", error);
     redirect(
       `/receipt/${token}?message=${encodeURIComponent(
-        `Tanda terima gagal dikonfirmasi. Detail: ${error.message}`,
+        "Tanda terima gagal dikonfirmasi. Coba ulangi atau hubungi admin.",
       )}`,
     );
   }
@@ -588,6 +602,14 @@ export async function confirmBatchReceiptAction(formData: FormData) {
     );
   }
 
+  if (!isValidSignatureData(signatureData)) {
+    redirect(
+      `/receipt-batch/${token}?message=${encodeURIComponent(
+        "Format tanda tangan tidak valid. Bersihkan tanda tangan lalu coba lagi.",
+      )}`,
+    );
+  }
+
   const { error } = await supabase.rpc("confirm_receipt_batch_by_token", {
     p_token: token,
     p_confirmed_name: confirmedName,
@@ -600,7 +622,7 @@ export async function confirmBatchReceiptAction(formData: FormData) {
     console.error("Failed to confirm batch receipt", error);
     redirect(
       `/receipt-batch/${token}?message=${encodeURIComponent(
-        `Tanda terima gabungan gagal dikonfirmasi. Detail: ${error.message}`,
+        "Tanda terima gabungan gagal dikonfirmasi. Coba ulangi atau hubungi admin.",
       )}`,
     );
   }
@@ -630,6 +652,14 @@ export async function confirmOutgoingBatchReceiptAction(formData: FormData) {
     );
   }
 
+  if (!isValidSignatureData(signatureData)) {
+    redirect(
+      `/receipt-outgoing-batch/${token}?message=${encodeURIComponent(
+        "Format tanda tangan tidak valid. Bersihkan tanda tangan lalu coba lagi.",
+      )}`,
+    );
+  }
+
   const { error } = await supabase.rpc(
     "confirm_outgoing_receipt_batch_by_token",
     {
@@ -645,7 +675,7 @@ export async function confirmOutgoingBatchReceiptAction(formData: FormData) {
     console.error("Failed to confirm outgoing batch receipt", error);
     redirect(
       `/receipt-outgoing-batch/${token}?message=${encodeURIComponent(
-        `Tanda terima surat keluar gagal dikonfirmasi. Detail: ${error.message}`,
+        "Tanda terima surat keluar gagal dikonfirmasi. Coba ulangi atau hubungi admin.",
       )}`,
     );
   }
@@ -698,7 +728,7 @@ export async function resetReceiptRequestAction(formData: FormData) {
     redirect(
       withMessage(
         returnTo,
-        `Tanda terima gagal direset. Detail: ${error.message}`,
+        "Tanda terima gagal direset. Coba ulangi atau hubungi admin.",
       ),
     );
   }

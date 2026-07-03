@@ -1,4 +1,5 @@
 import { LoadingLink } from "@/components/LoadingLink";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 type PaginationControlsProps = {
   currentPage: number;
@@ -20,8 +21,8 @@ export function PaginationControls({
   const lastItem = Math.min(currentPage * pageSize, totalItems);
 
   return (
-    <div className="flex flex-col gap-3 border-t border-slate-200 px-5 py-4 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-between">
-      <p>
+    <div className="flex flex-col gap-3 border-t border-slate-200 bg-slate-50/60 px-5 py-4 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-between">
+      <p className="leading-6">
         Menampilkan{" "}
         <span className="font-semibold text-slate-900">
           {firstItem}-{lastItem}
@@ -34,29 +35,39 @@ export function PaginationControls({
           <LoadingLink
             href={previousHref}
             pendingLabel="Memuat..."
-            className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-600 transition hover:border-[#0A3A60]/30 hover:bg-slate-50 hover:text-[#0A3A60]"
+            className="inline-flex h-10 items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-600 shadow-sm transition hover:border-[#0A3A60]/30 hover:bg-slate-50 hover:text-[#0A3A60]"
           >
+            <ChevronLeft className="size-4" aria-hidden="true" />
             Sebelumnya
           </LoadingLink>
         ) : (
-          <span className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-100 bg-slate-50 px-3 text-sm font-semibold text-slate-400">
+          <span
+            className="inline-flex h-10 items-center justify-center gap-1.5 rounded-lg border border-slate-100 bg-white/60 px-3 text-sm font-semibold text-slate-400"
+            aria-disabled="true"
+          >
+            <ChevronLeft className="size-4" aria-hidden="true" />
             Sebelumnya
           </span>
         )}
-        <span className="inline-flex h-9 min-w-16 items-center justify-center rounded-lg bg-slate-100 px-3 text-sm font-semibold text-slate-700">
-          {currentPage}/{totalPages}
+        <span className="inline-flex h-10 min-w-24 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 shadow-sm">
+          {currentPage} / {totalPages}
         </span>
         {nextHref ? (
           <LoadingLink
             href={nextHref}
             pendingLabel="Memuat..."
-            className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-600 transition hover:border-[#0A3A60]/30 hover:bg-slate-50 hover:text-[#0A3A60]"
+            className="inline-flex h-10 items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-600 shadow-sm transition hover:border-[#0A3A60]/30 hover:bg-slate-50 hover:text-[#0A3A60]"
           >
             Berikutnya
+            <ChevronRight className="size-4" aria-hidden="true" />
           </LoadingLink>
         ) : (
-          <span className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-100 bg-slate-50 px-3 text-sm font-semibold text-slate-400">
+          <span
+            className="inline-flex h-10 items-center justify-center gap-1.5 rounded-lg border border-slate-100 bg-white/60 px-3 text-sm font-semibold text-slate-400"
+            aria-disabled="true"
+          >
             Berikutnya
+            <ChevronRight className="size-4" aria-hidden="true" />
           </span>
         )}
       </div>

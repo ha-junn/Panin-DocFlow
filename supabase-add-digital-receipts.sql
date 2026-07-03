@@ -76,12 +76,13 @@ to authenticated
 with check (created_by = auth.uid());
 
 drop policy if exists "Authenticated users can update receipt requests" on public.receipt_requests;
-create policy "Authenticated users can update receipt requests"
+drop policy if exists "Admins and creators can update receipt requests" on public.receipt_requests;
+create policy "Admins and creators can update receipt requests"
 on public.receipt_requests
 for update
 to authenticated
-using (true)
-with check (true);
+using (public.is_admin() or created_by = auth.uid())
+with check (public.is_admin() or created_by = auth.uid());
 
 drop policy if exists "Authenticated users can delete receipt requests" on public.receipt_requests;
 create policy "Admins can delete receipt requests"
@@ -176,6 +177,15 @@ begin
 
   if p_recipient_name is null or length(trim(p_recipient_name)) = 0 then
     raise exception 'Nama penerima wajib diisi.';
+  end if;
+
+  if p_signature_data is not null
+    and (
+      length(p_signature_data) > 300000
+      or p_signature_data !~ '^data:image/png;base64,[A-Za-z0-9+/=]+$'
+    )
+  then
+    raise exception 'Format tanda tangan tidak valid.';
   end if;
 
   update public.receipt_requests

@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { Building2, Check, Tags, UserRound } from "lucide-react";
+import { LetterNumberInput } from "./LetterNumberInput";
 
 type Department = {
   id: string;
@@ -39,6 +40,7 @@ const quickCategoryNames = [
   "FORM LEMBUR",
   "INTERNAL",
   "NOTA PEMINDAHAN",
+  "UMUM",
 ];
 
 function normalizeName(value: string) {
@@ -157,6 +159,10 @@ export function DocumentQuickFields({
         <p className="mt-2 text-xs text-slate-500">
           Pilih salah satu: GA atau HRM.
         </p>
+
+        <div className="mt-4">
+          <LetterNumberInput />
+        </div>
       </div>
 
       <div className="block">
@@ -164,7 +170,7 @@ export function DocumentQuickFields({
           <Tags className="size-4 text-slate-400" />
           Kategori
         </span>
-        <div className="mt-1.5 flex flex-wrap gap-1.5">
+        <div className="mt-2 grid grid-cols-2 gap-2">
           {quickCategories.map((category) => {
             const isSelected = selectedCategoryId === category.id;
 
@@ -174,14 +180,23 @@ export function DocumentQuickFields({
                 type="button"
                 onClick={() => setSelectedCategoryId(category.id)}
                 className={cn(
-                  "inline-flex h-8 items-center gap-1.5 rounded-full border px-2.5 text-[11px] font-semibold transition",
+                  "flex min-h-10 w-full items-center justify-start gap-2 rounded-lg border px-3 py-2 text-left text-xs font-semibold leading-4 transition",
                   isSelected
                     ? "border-[#0A3A60] bg-[#0A3A60] text-white shadow-sm"
                     : "border-slate-200 bg-slate-50 text-slate-700 hover:border-[#0A3A60]/30 hover:bg-white hover:text-[#0A3A60]",
                 )}
               >
-                {isSelected ? <Check className="size-3" /> : null}
-                {category.name}
+                <span
+                  className={cn(
+                    "flex size-4 shrink-0 items-center justify-center rounded-full border",
+                    isSelected
+                      ? "border-white/50 bg-white/10"
+                      : "border-slate-300 bg-white",
+                  )}
+                >
+                  {isSelected ? <Check className="size-3" /> : null}
+                </span>
+                <span>{category.name}</span>
               </button>
             );
           })}
@@ -191,22 +206,33 @@ export function DocumentQuickFields({
               type="button"
               onClick={() => setShowMoreCategories((current) => !current)}
               className={cn(
-                "inline-flex h-8 items-center gap-1.5 rounded-full border px-2.5 text-[11px] font-semibold transition",
+                "col-span-2 flex min-h-10 w-full items-center justify-start gap-2 rounded-lg border px-3 py-2 text-left text-xs font-semibold leading-4 transition",
                 selectedOtherCategory
                   ? "border-[#0A3A60] bg-[#0A3A60] text-white shadow-sm"
                   : "border-slate-200 bg-white text-slate-600 hover:border-[#0A3A60]/30 hover:bg-[#0A3A60]/5 hover:text-[#0A3A60]",
               )}
             >
-              {selectedOtherCategory ? <Check className="size-3" /> : null}
-              {selectedOtherCategory
-                ? selectedOtherCategory.name
-                : "Lainnya"}
+              <span
+                className={cn(
+                  "flex size-4 shrink-0 items-center justify-center rounded-full border",
+                  selectedOtherCategory
+                    ? "border-white/50 bg-white/10"
+                    : "border-slate-300 bg-slate-50",
+                )}
+              >
+                {selectedOtherCategory ? <Check className="size-3" /> : null}
+              </span>
+              <span>
+                {selectedOtherCategory
+                  ? selectedOtherCategory.name
+                  : "Lainnya"}
+              </span>
             </button>
           ) : null}
         </div>
 
         {showMoreCategories && otherCategories.length > 0 ? (
-          <div className="mt-3 grid gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3 sm:grid-cols-2">
+          <div className="mt-2 grid grid-cols-2 gap-2 rounded-lg border border-slate-200 bg-slate-50 p-2">
             {otherCategories.map((category) => {
               const isSelected = selectedCategoryId === category.id;
 
@@ -219,7 +245,7 @@ export function DocumentQuickFields({
                     setShowMoreCategories(false);
                   }}
                   className={cn(
-                    "flex min-h-8 items-center justify-between rounded-md px-2.5 py-1.5 text-left text-[11px] font-semibold transition",
+                    "flex min-h-10 items-center justify-between gap-2 rounded-md px-3 py-2 text-left text-xs font-semibold leading-4 transition",
                     isSelected
                       ? "bg-[#0A3A60] text-white"
                       : "bg-white text-slate-600 hover:bg-[#0A3A60]/5 hover:text-[#0A3A60]",

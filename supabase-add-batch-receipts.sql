@@ -73,19 +73,21 @@ to authenticated
 with check (created_by = auth.uid());
 
 drop policy if exists "Authenticated users can update receipt batches" on public.receipt_batches;
-create policy "Authenticated users can update receipt batches"
+drop policy if exists "Admins and creators can update receipt batches" on public.receipt_batches;
+create policy "Admins and creators can update receipt batches"
 on public.receipt_batches
 for update
 to authenticated
-using (true)
-with check (true);
+using (public.is_admin() or created_by = auth.uid())
+with check (public.is_admin() or created_by = auth.uid());
 
 drop policy if exists "Admins can delete receipt batches" on public.receipt_batches;
-create policy "Admins can delete receipt batches"
+drop policy if exists "Admins and creators can delete pending receipt batches" on public.receipt_batches;
+create policy "Admins and creators can delete pending receipt batches"
 on public.receipt_batches
 for delete
 to authenticated
-using (public.is_admin());
+using (public.is_admin() or (created_by = auth.uid() and status = 'PENDING'));
 
 drop policy if exists "Authenticated users can read receipt batch items" on public.receipt_batch_items;
 create policy "Authenticated users can read receipt batch items"
@@ -99,7 +101,15 @@ create policy "Authenticated users can create receipt batch items"
 on public.receipt_batch_items
 for insert
 to authenticated
-with check (true);
+with check (
+  exists (
+    select 1
+    from public.receipt_batches b
+    where b.id = receipt_batch_items.batch_id
+      and b.created_by = auth.uid()
+      and b.status = 'PENDING'
+  )
+);
 
 drop policy if exists "Admins can delete receipt batch items" on public.receipt_batch_items;
 create policy "Admins can delete receipt batch items"
@@ -202,6 +212,15 @@ begin
 
   if p_confirmed_name is null or length(trim(p_confirmed_name)) = 0 then
     raise exception 'Nama penerima wajib diisi.';
+  end if;
+
+  if p_signature_data is not null
+    and (
+      length(p_signature_data) > 300000
+      or p_signature_data !~ '^data:image/png;base64,[A-Za-z0-9+/=]+$'
+    )
+  then
+    raise exception 'Format tanda tangan tidak valid.';
   end if;
 
   update public.receipt_batches

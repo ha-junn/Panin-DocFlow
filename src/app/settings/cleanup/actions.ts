@@ -2,6 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import {
+  getCurrentJakartaMonth,
+  getJakartaMonthDateRange,
+} from "@/lib/date";
+import { fetchAllRows } from "@/lib/supabase/pagination";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 type CleanupDocument = {
@@ -40,19 +45,6 @@ function isValidMonth(value: string) {
   );
 }
 
-function getMonthRange(monthValue: string) {
-  const [yearText, monthText] = monthValue.split("-");
-  const year = Number(yearText);
-  const monthIndex = Number(monthText) - 1;
-  const start = new Date(Date.UTC(year, monthIndex, 1, 0, 0, 0));
-  const end = new Date(Date.UTC(year, monthIndex + 1, 1, 0, 0, 0));
-
-  return {
-    startIso: start.toISOString(),
-    endIso: end.toISOString(),
-  };
-}
-
 function chunkArray<T>(items: T[], size: number) {
   const chunks: T[][] = [];
 
@@ -77,27 +69,38 @@ export async function cleanupDocumentsByMonthAction(formData: FormData) {
   const confirmed = formData.get("backup_confirmed") === "on";
 
   if (!isValidMonth(month)) {
-    redirect(cleanupRedirect(month || new Date().toISOString().slice(0, 7), "error", "Bulan yang dipilih tidak valid."));
+    redirect(cleanupRedirect(month || getCurrentJakartaMonth(), "error", "Bulan yang dipilih tidak valid."));
   }
 
   if (!confirmed) {
     redirect(cleanupRedirect(month, "error", "Centang konfirmasi backup sebelum membersihkan data."));
   }
 
-  const { startIso, endIso } = getMonthRange(month);
-  const { data: documents, error: readError } = await supabase
-    .from("documents")
-    .select("id, attachment_url")
-    .gte("received_at", startIso)
-    .lt("received_at", endIso)
-    .range(0, 4999);
+  const [yearText, monthText] = month.split("-");
+  const { startIso, endIso } = getJakartaMonthDateRange(
+    Number(yearText),
+    Number(monthText),
+  );
+  const { data: documents, error: readError } = await fetchAllRows<CleanupDocument>(
+    () =>
+      supabase
+        .from("documents")
+        .select("id, attachment_url")
+        .gte("received_at", startIso)
+        .lt("received_at", endIso) as unknown as {
+        range(
+          from: number,
+          to: number,
+        ): PromiseLike<{ data: CleanupDocument[] | null; error: { message: string } | null }>;
+      },
+  );
 
   if (readError) {
     console.error("Failed to read documents before cleanup", readError);
     redirect(cleanupRedirect(month, "error", "Data gagal dibaca. Coba ulangi sebentar lagi."));
   }
 
-  const rows = (documents ?? []) as CleanupDocument[];
+  const rows = documents;
   const ids = rows.map((item) => item.id);
 
   if (ids.length === 0) {
@@ -133,12 +136,15 @@ export async function cleanupDocumentsByMonthAction(formData: FormData) {
     ),
   );
 
+  let storageFailureCount = 0;
+
   for (const pathChunk of chunkArray(attachmentPaths, 100)) {
     const { error: storageError } = await supabase.storage
       .from("document-attachments")
       .remove(pathChunk);
 
     if (storageError) {
+      storageFailureCount += pathChunk.length;
       console.error("Failed to remove cleaned document attachments", storageError);
     }
   }
@@ -155,7 +161,9 @@ export async function cleanupDocumentsByMonthAction(formData: FormData) {
     cleanupRedirect(
       month,
       "message",
-      `${ids.length} data dokumen/invoice bulan ini berhasil dibersihkan.`,
+      storageFailureCount > 0
+        ? `${ids.length} data dokumen/invoice dibersihkan, tetapi ${storageFailureCount} lampiran gagal dihapus. Cek log server.`
+        : `${ids.length} data dokumen/invoice bulan ini berhasil dibersihkan.`,
     ),
   );
 }

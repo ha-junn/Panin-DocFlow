@@ -11,6 +11,7 @@ import {
 import { AppLayout } from "@/components/AppLayout";
 import { LoadingLink } from "@/components/LoadingLink";
 import { PendingSubmitButton } from "@/components/PendingSubmitButton";
+import { RupiahInput } from "@/components/RupiahInput";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { updateDocumentAction } from "./actions";
 
@@ -69,10 +70,6 @@ function toDatetimeLocalValue(value: string) {
 
 function toDateInputValue(value: string | null) {
   return value ? value.slice(0, 10) : "";
-}
-
-function formatAmountInput(value: number | null) {
-  return value ? String(value) : "";
 }
 
 function getInvoiceDetail(details: EditableDocument["invoice_details"]) {
@@ -155,6 +152,7 @@ export default async function EditDocumentPage({
   );
   const isTransferNote =
     selectedCategory?.name.trim().toUpperCase() === "NOTA PEMINDAHAN";
+  const isBpku = selectedCategory?.name.trim().toUpperCase() === "BPKU";
 
   return (
     <AppLayout>
@@ -286,11 +284,8 @@ export default async function EditDocumentPage({
                     <span className="text-sm font-medium text-slate-700">
                       Nominal
                     </span>
-                    <input
+                    <RupiahInput
                       name="amount"
-                      type="number"
-                      min="0"
-                      step="0.01"
                       defaultValue={invoiceDetail?.amount ?? ""}
                       placeholder="Opsional"
                       className="mt-1.5 h-11 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#D71920] focus:bg-white focus:ring-4 focus:ring-[#D71920]/10"
@@ -367,14 +362,22 @@ export default async function EditDocumentPage({
                 <div className="grid gap-5 md:col-span-2 md:grid-cols-2">
                   <label className="block">
                     <span className="text-sm font-medium text-slate-700">
-                      {isTransferNote ? "Keterangan" : "Nama karyawan"}
+                      {isTransferNote
+                        ? "Keterangan Nota Pemindahan"
+                        : isBpku
+                          ? "Nama Karyawan BPKU"
+                        : "Nama karyawan"}
                     </span>
                     <input
                       name="employee_name"
                       type="text"
                       defaultValue={detail.employee_name ?? ""}
                       placeholder={
-                        isTransferNote ? "Keterangan pemindahan" : "Opsional"
+                        isTransferNote
+                          ? "Keterangan Nota Pemindahan"
+                          : isBpku
+                            ? "Nama Karyawan BPKU"
+                          : "Opsional"
                       }
                       className="mt-1.5 h-11 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#0A3A60] focus:bg-white focus:ring-4 focus:ring-[#0A3A60]/10"
                     />
@@ -382,13 +385,15 @@ export default async function EditDocumentPage({
 
                   <label className="block">
                     <span className="text-sm font-medium text-slate-700">
-                      {isTransferNote ? "Jumlah" : "Total"}
+                      {isTransferNote
+                        ? "Jumlah Nota Pemindahan"
+                        : isBpku
+                          ? "Total BPKU"
+                          : "Total"}
                     </span>
-                    <input
+                    <RupiahInput
                       name="document_amount"
-                      type="text"
-                      inputMode="numeric"
-                      defaultValue={formatAmountInput(detail.amount)}
+                      defaultValue={detail.amount}
                       placeholder="Opsional, contoh: Rp 150.000"
                       className="mt-1.5 h-11 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#0A3A60] focus:bg-white focus:ring-4 focus:ring-[#0A3A60]/10"
                     />

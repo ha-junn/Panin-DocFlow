@@ -192,7 +192,7 @@ export default async function OutgoingPage({ searchParams }: OutgoingPageProps) 
           </div>
         ) : null}
 
-        <section className="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
           <div className="flex flex-col gap-3 border-b border-slate-200 p-5 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-sm font-semibold text-slate-950">
@@ -250,7 +250,7 @@ export default async function OutgoingPage({ searchParams }: OutgoingPageProps) 
               </p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto [-webkit-overflow-scrolling:touch]">
               <table className="w-full min-w-[980px] border-separate border-spacing-0 text-left">
                 <thead>
                   <tr className="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -326,7 +326,7 @@ export default async function OutgoingPage({ searchParams }: OutgoingPageProps) 
                             <LoadingLink
                               href={`/outgoing/${letter.id}`}
                               pendingLabel="Membuka..."
-                              className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-600 transition hover:border-[#0A3A60]/30 hover:bg-slate-50 hover:text-[#0A3A60]"
+                              className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-600 transition hover:border-[#0A3A60]/30 hover:bg-slate-50 hover:text-[#0A3A60]"
                             >
                               Detail
                               <ArrowUpRight className="size-4" aria-hidden="true" />
@@ -335,7 +335,7 @@ export default async function OutgoingPage({ searchParams }: OutgoingPageProps) 
                               <input type="hidden" name="id" value={letter.id} />
                               <ConfirmSubmitButton
                                 message={`Hapus surat keluar ${letter.agenda_number}?`}
-                                className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-red-200 bg-white px-3 text-sm font-semibold text-[#B9151B] transition hover:bg-red-50"
+                                className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-red-200 bg-white px-3 text-sm font-semibold text-[#B9151B] transition hover:bg-red-50"
                               >
                                 <Trash2 className="size-4" aria-hidden="true" />
                                 Hapus

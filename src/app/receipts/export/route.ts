@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { fetchAllRows } from "@/lib/supabase/pagination";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { formatOutgoingDestination } from "@/lib/text";
 
@@ -66,12 +67,19 @@ export async function GET() {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
 
-  const { data: receipts, error } = await supabase
-    .from("receipt_requests")
-    .select(
-      "id, target_type, document_id, outgoing_letter_id, status, recipient_name, recipient_unit, recipient_note, created_at, confirmed_at",
-    )
-    .order("created_at", { ascending: false });
+  const { data: receipts, error } = await fetchAllRows<ReceiptExportRow>(() =>
+    supabase
+      .from("receipt_requests")
+      .select(
+        "id, target_type, document_id, outgoing_letter_id, status, recipient_name, recipient_unit, recipient_note, created_at, confirmed_at",
+      )
+      .order("created_at", { ascending: false }) as unknown as {
+      range(
+        from: number,
+        to: number,
+      ): PromiseLike<{ data: ReceiptExportRow[] | null; error: { message: string } | null }>;
+    },
+  );
 
   if (error) {
     return NextResponse.json(
@@ -80,7 +88,7 @@ export async function GET() {
     );
   }
 
-  const receiptRows = (receipts ?? []) as ReceiptExportRow[];
+  const receiptRows = receipts;
   const documentIds = receiptRows
     .map((row) => row.document_id)
     .filter((id): id is string => Boolean(id));

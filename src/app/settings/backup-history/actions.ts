@@ -2,6 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { getJakartaMonthDateRange } from "@/lib/date";
+import { fetchAllRows } from "@/lib/supabase/pagination";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { uppercaseText } from "@/lib/text";
 
@@ -52,17 +54,12 @@ function isValidMonth(value: string) {
   );
 }
 
-function getMonthRange(monthValue: string) {
+function getMonthDate(monthValue: string) {
   const [yearText, monthText] = monthValue.split("-");
-  const year = Number(yearText);
-  const monthIndex = Number(monthText) - 1;
-  const start = new Date(Date.UTC(year, monthIndex, 1, 0, 0, 0));
-  const end = new Date(Date.UTC(year, monthIndex + 1, 1, 0, 0, 0));
-
   return {
     monthDate: `${monthValue}-01`,
-    startIso: start.toISOString(),
-    endIso: end.toISOString(),
+    year: Number(yearText),
+    month: Number(monthText),
   };
 }
 
@@ -102,20 +99,27 @@ export async function createBackupHistoryAction(formData: FormData) {
     );
   }
 
-  const { monthDate, startIso, endIso } = getMonthRange(month);
-  const { data, error } = await supabase
-    .from("documents")
-    .select("type, attachment_url")
-    .gte("received_at", startIso)
-    .lt("received_at", endIso)
-    .range(0, 4999);
+  const { monthDate, year, month: monthNumber } = getMonthDate(month);
+  const { startIso, endIso } = getJakartaMonthDateRange(year, monthNumber);
+  const { data, error } = await fetchAllRows<BackupDocument>(() =>
+    supabase
+      .from("documents")
+      .select("type, attachment_url")
+      .gte("received_at", startIso)
+      .lt("received_at", endIso) as unknown as {
+      range(
+        from: number,
+        to: number,
+      ): PromiseLike<{ data: BackupDocument[] | null; error: { message: string } | null }>;
+    },
+  );
 
   if (error) {
     console.error("Failed to count backup data", error);
     redirect(backupHistoryRedirect("error", "Data bulan backup gagal dihitung.", month));
   }
 
-  const documents = (data ?? []) as BackupDocument[];
+  const documents = data;
   const documentCount = documents.filter((item) => item.type === "LETTER").length;
   const invoiceCount = documents.filter((item) => item.type === "INVOICE").length;
   const attachmentCount = documents.filter((item) => item.attachment_url).length;
