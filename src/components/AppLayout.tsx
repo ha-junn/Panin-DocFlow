@@ -11,6 +11,7 @@ import {
   CheckCircle2,
   ChevronDown,
   ClipboardList,
+  Activity,
   FileArchive,
   FileText,
   LayoutDashboard,
@@ -81,6 +82,12 @@ const navigationItems: NavigationItem[] = [
     label: "Pengaturan",
     href: "/settings/departments",
     icon: Settings,
+    badgeKey: null,
+  },
+  {
+    label: "Health",
+    href: "/settings/system-health",
+    icon: Activity,
     badgeKey: null,
   },
   {
