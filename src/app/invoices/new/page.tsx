@@ -227,6 +227,20 @@ export default async function NewInvoicePage({
               <VendorPicFields suggestions={vendorPicSuggestions} />
 
               <label className="block">
+                <span className="flex items-center gap-2 text-sm font-medium text-slate-700">
+                  <UserRound className="size-4 text-slate-400" />
+                  PIC/penerima internal
+                </span>
+                <input
+                  name="internal_pic"
+                  type="text"
+                  required
+                  placeholder="Nama PIC internal"
+                  className="mt-1.5 h-11 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#0A3A60] focus:bg-white focus:ring-4 focus:ring-[#0A3A60]/10"
+                />
+              </label>
+
+              <label className="block">
                 <span className="text-sm font-medium text-slate-700">
                   Departemen tujuan
                 </span>
