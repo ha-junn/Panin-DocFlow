@@ -30,6 +30,7 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 type NavigationItem = {
   label: string;
+  desktopLabel?: string;
   href: string;
   icon: LucideIcon;
   badgeKey: keyof SidebarCounts | null;
@@ -56,18 +57,21 @@ const navigationItems: NavigationItem[] = [
   },
   {
     label: "Invoice Masuk",
+    desktopLabel: "Invoice",
     href: "/invoices",
     icon: ClipboardList,
     badgeKey: "invoices",
   },
   {
     label: "Surat Keluar",
+    desktopLabel: "Surat",
     href: "/outgoing",
     icon: Send,
     badgeKey: "outgoing",
   },
   {
     label: "Tanda Terima",
+    desktopLabel: "Tanda",
     href: "/receipts",
     icon: ReceiptText,
     badgeKey: null,
@@ -80,6 +84,7 @@ const navigationItems: NavigationItem[] = [
   },
   {
     label: "Pengaturan",
+    desktopLabel: "Atur",
     href: "/settings/departments",
     icon: Settings,
     badgeKey: null,
@@ -155,7 +160,7 @@ function DesktopNavigation({ counts }: { counts: SidebarCounts }) {
 
   return (
     <nav
-      className="hidden min-w-0 flex-1 items-center justify-between gap-2 overflow-hidden pr-3 xl:flex"
+      className="hidden min-w-0 flex-1 items-center justify-start gap-1 overflow-visible pr-2 xl:flex 2xl:gap-2"
       aria-label="Navigasi utama"
     >
       {desktopNavigationItems.map((item) => {
@@ -174,7 +179,7 @@ function DesktopNavigation({ counts }: { counts: SidebarCounts }) {
             key={item.label}
             href={item.href}
             className={[
-              "group inline-flex h-10 shrink-0 items-center gap-2 rounded-lg px-3 text-sm font-semibold transition 2xl:px-4 2xl:text-[15px]",
+              "group inline-flex h-10 shrink-0 items-center gap-1.5 rounded-lg px-2.5 text-sm font-semibold transition 2xl:gap-2 2xl:px-4 2xl:text-[15px]",
               isActive
                 ? "bg-[#0A3A60] text-white shadow-sm shadow-slate-900/10"
                 : "text-slate-600 hover:bg-slate-100 hover:text-[#0A3A60]",
@@ -187,7 +192,7 @@ function DesktopNavigation({ counts }: { counts: SidebarCounts }) {
               ].join(" ")}
               aria-hidden="true"
             />
-            <span className="whitespace-nowrap">{item.label}</span>
+            <span className="whitespace-nowrap">{item.desktopLabel ?? item.label}</span>
             {badgeValue ? (
               <span
                 className={[
