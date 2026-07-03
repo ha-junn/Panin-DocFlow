@@ -6,6 +6,8 @@
   --foreground: #020617;
   --panin-blue: #0a3a60;
   --panin-red: #d71920;
+  --panin-border: #dbe3ec;
+  --panin-focus: rgba(10, 58, 96, 0.18);
   font-family:
     "Segoe UI",
     "Aptos",
@@ -26,19 +28,78 @@
 
 html {
   background: var(--background);
+  scroll-behavior: smooth;
 }
 
 body {
   min-width: 320px;
   min-height: 100vh;
   margin: 0;
-  background: var(--background);
+  background:
+    linear-gradient(180deg, #f8fafc 0%, #f5f8fb 46%, #eef3f8 100%);
   color: var(--foreground);
+}
+
+a,
+button {
+  -webkit-tap-highlight-color: transparent;
 }
 
 button,
 input {
   font: inherit;
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  transition-duration: 160ms;
+  transition-property:
+    background-color,
+    border-color,
+    box-shadow,
+    color,
+    opacity,
+    transform;
+  transition-timing-function: ease;
+}
+
+button:disabled,
+button[aria-disabled="true"] {
+  cursor: not-allowed;
+  opacity: 0.68;
+  box-shadow: none;
+}
+
+input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+select {
+  min-height: 2.5rem;
+}
+
+input,
+select,
+textarea {
+  accent-color: var(--panin-blue);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #94a3b8;
+}
+
+:where(a, button, input, select, textarea):focus-visible {
+  outline: 2px solid transparent;
+  box-shadow:
+    0 0 0 3px var(--panin-focus),
+    0 0 0 1px rgba(10, 58, 96, 0.26);
+}
+
+label:has(:required) > span:first-child::after {
+  content: " *";
+  color: var(--panin-red);
+  font-weight: 700;
 }
 
 input[type="text"],
@@ -71,7 +132,58 @@ textarea {
   }
 }
 
+.animate-popover-in {
+  animation: popover-in 140ms ease-out;
+}
+
+.animate-toast-in {
+  animation: toast-in 180ms ease-out;
+}
+
+@keyframes popover-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 640px) {
+  .overflow-x-auto {
+    scrollbar-width: thin;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+
   .topbar-marquee-track {
     animation: none;
   }

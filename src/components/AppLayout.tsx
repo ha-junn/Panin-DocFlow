@@ -91,6 +91,10 @@ const navigationItems: NavigationItem[] = [
   },
 ];
 
+const desktopNavigationItems = navigationItems.filter(
+  (item) => item.href !== "/search",
+);
+
 const branchProfile = {
   code: "HRM-GA",
   name: "Pusat",
@@ -100,6 +104,101 @@ const branchProfile = {
 
 const runningNotice =
   "KotakSurat aktif | Dikembangkan oleh Aprijal | Aktif sejak 02 Juni 2026 | Catat dokumen sesuai tanggal diterima | Pastikan lampiran terbaca jelas | Backup data setiap akhir bulan";
+
+function BrandMark({ compact = false }: { compact?: boolean }) {
+  return (
+    <LoadingLink
+      href="/"
+      className="flex min-w-0 items-center gap-3"
+      aria-label="KotakSurat DocFlow"
+    >
+      <div
+        className={[
+          "relative shrink-0 overflow-hidden rounded-lg bg-white shadow-sm ring-1 ring-slate-200",
+          compact ? "size-10" : "size-12",
+        ].join(" ")}
+      >
+        <Image
+          src="/panin-docflow-symbol-v2.png"
+          alt="Logo KotakSurat"
+          fill
+          sizes={compact ? "40px" : "48px"}
+          className="object-contain object-center"
+          priority
+        />
+      </div>
+      <div className="min-w-0">
+        <p
+          className={[
+            "truncate font-semibold tracking-tight",
+            compact ? "text-base leading-5" : "text-lg leading-5",
+          ].join(" ")}
+        >
+          <span className="text-[#F04444]">Kotak</span>
+          <span className="text-[#0EA5E9]">Surat</span>
+        </p>
+        <p className="truncate text-xs font-medium text-slate-500">DocFlow</p>
+      </div>
+    </LoadingLink>
+  );
+}
+
+function DesktopNavigation({ counts }: { counts: SidebarCounts }) {
+  const pathname = usePathname();
+
+  return (
+    <nav
+      className="hidden min-w-0 flex-1 items-center justify-between gap-2 overflow-hidden pr-3 xl:flex"
+      aria-label="Navigasi utama"
+    >
+      {desktopNavigationItems.map((item) => {
+        const Icon = item.icon;
+        const badgeValue =
+          item.badgeKey && counts[item.badgeKey] !== null
+            ? String(counts[item.badgeKey])
+            : null;
+        const isActive =
+          item.href === "/"
+            ? pathname === "/"
+            : pathname === item.href || pathname.startsWith(`${item.href}/`);
+
+        return (
+          <LoadingLink
+            key={item.label}
+            href={item.href}
+            className={[
+              "group inline-flex h-10 shrink-0 items-center gap-2 rounded-lg px-3 text-sm font-semibold transition 2xl:px-4 2xl:text-[15px]",
+              isActive
+                ? "bg-[#0A3A60] text-white shadow-sm shadow-slate-900/10"
+                : "text-slate-600 hover:bg-slate-100 hover:text-[#0A3A60]",
+            ].join(" ")}
+          >
+            <Icon
+              className={[
+                "hidden size-4 shrink-0 2xl:block",
+                isActive ? "text-white" : "text-slate-400 group-hover:text-[#0A3A60]",
+              ].join(" ")}
+              aria-hidden="true"
+            />
+            <span className="whitespace-nowrap">{item.label}</span>
+            {badgeValue ? (
+              <span
+                className={[
+                  "rounded-full px-2 py-0.5 text-xs font-bold leading-none",
+                  isActive
+                    ? "bg-white/15 text-white"
+                    : "bg-[#0A3A60]/10 text-[#0A3A60]",
+                ].join(" ")}
+              >
+                {badgeValue}
+              </span>
+            ) : null}
+          </LoadingLink>
+        );
+      })}
+    </nav>
+  );
+}
 
 function SidebarContent({
   counts,
@@ -227,7 +326,13 @@ function ProfileSignOutButton() {
   );
 }
 
-function TopNavbar({ onMenuClick }: { onMenuClick: () => void }) {
+function TopNavbar({
+  counts,
+  onMenuClick,
+}: {
+  counts: SidebarCounts;
+  onMenuClick: () => void;
+}) {
   const pathname = usePathname();
   const [isNotificationOpen, setNotificationOpen] = useState(false);
   const [isProfileOpen, setProfileOpen] = useState(false);
@@ -300,120 +405,133 @@ function TopNavbar({ onMenuClick }: { onMenuClick: () => void }) {
   }, [pathname]);
 
   return (
-    <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
-      <div className="flex min-h-16 items-center gap-3 px-4 sm:px-6 lg:px-8">
+    <header className="sticky top-0 z-30 border-b border-slate-200/80 bg-gradient-to-r from-[#F3F8FC]/95 via-[#F8FBFE]/95 to-[#EEF6FB]/95 shadow-sm backdrop-blur">
+      <div className="bg-[#071B3A] text-white">
+        <div className="mx-auto flex h-9 max-w-[1800px] items-center gap-4 px-4 sm:px-6 lg:px-8">
+          <div className="hidden shrink-0 items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-sky-100 lg:flex">
+            <span>{currentDate}</span>
+            <span className="h-1 w-1 rounded-full bg-sky-300" />
+            <span>Monitoring Dokumen HRM-GA</span>
+          </div>
+          <div
+            className="topbar-marquee flex min-w-0 flex-1 items-center overflow-hidden text-xs font-medium text-sky-50"
+            aria-label={runningNotice}
+          >
+            <div className="topbar-marquee-track flex min-w-max items-center gap-8">
+              <span>{runningNotice}</span>
+              <span aria-hidden="true">{runningNotice}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="mx-auto flex min-h-[72px] max-w-[1800px] items-center gap-3 px-4 sm:px-6 lg:px-8">
         <button
           type="button"
           onClick={onMenuClick}
-          className="inline-flex size-10 items-center justify-center rounded-lg border border-slate-200 text-slate-600 transition hover:border-[#0A3A60]/30 hover:bg-slate-50 hover:text-[#0A3A60] lg:hidden"
+          className="inline-flex size-10 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-[#0A3A60]/30 hover:bg-slate-50 hover:text-[#0A3A60] xl:hidden"
           aria-label="Buka navigasi"
           title="Buka navigasi"
         >
           <Menu className="size-5" aria-hidden="true" />
         </button>
 
-        <div className="hidden min-w-0 lg:block">
-          <p className="text-xs font-medium uppercase tracking-[0.16em] text-slate-500">
-            {currentDate}
-          </p>
-          <p className="text-sm font-semibold text-slate-950">
-            Monitoring Dokumen HRM-GA
-          </p>
+        <div className="w-[205px] shrink-0">
+          <BrandMark compact />
         </div>
 
-        <div
-          className="topbar-marquee hidden h-10 min-w-0 flex-1 items-center overflow-hidden rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm text-slate-600 lg:flex"
-          aria-label={runningNotice}
-        >
-          <div className="topbar-marquee-track flex min-w-max items-center gap-8">
-            <span>{runningNotice}</span>
-            <span aria-hidden="true">{runningNotice}</span>
-          </div>
-        </div>
+        <DesktopNavigation counts={counts} />
 
-        <div className="hidden items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm md:flex">
-          <FileArchive className="size-4 text-[#0A3A60]" aria-hidden="true" />
-          <span className="text-slate-500">{branchProfile.name}</span>
-          <span className="font-semibold text-slate-950">
-            {branchProfile.code}
-          </span>
-        </div>
+        <div className="ml-auto flex shrink-0 items-center gap-2">
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => {
+                setNotificationOpen((current) => !current);
+                setUnreadNotification(false);
+                setProfileOpen(false);
+              }}
+              className="relative inline-flex size-10 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-[#0A3A60]/30 hover:bg-slate-50 hover:text-[#0A3A60]"
+              aria-label="Lihat notifikasi"
+              title="Notifikasi"
+            >
+              <Bell className="size-5" aria-hidden="true" />
+              {hasUnreadNotification ? (
+                <span className="absolute right-2 top-2 size-2 rounded-full bg-[#EF4444] ring-2 ring-white" />
+              ) : null}
+            </button>
 
-        <div className="relative">
-          <button
-            type="button"
-            onClick={() => {
-              setNotificationOpen((current) => !current);
-              setUnreadNotification(false);
-              setProfileOpen(false);
-            }}
-            className="relative inline-flex size-10 items-center justify-center rounded-lg border border-slate-200 text-slate-600 transition hover:border-[#0A3A60]/30 hover:bg-slate-50 hover:text-[#0A3A60]"
-            aria-label="Lihat notifikasi"
-            title="Notifikasi"
-          >
-            <Bell className="size-5" aria-hidden="true" />
-            {hasUnreadNotification ? (
-              <span className="absolute right-2 top-2 size-2 rounded-full bg-[#EF4444] ring-2 ring-white" />
-            ) : null}
-          </button>
-
-          {isNotificationOpen ? (
-            <div className="absolute right-0 top-12 z-50 w-80 rounded-lg border border-slate-200 bg-white p-4 text-sm shadow-xl">
-              <div className="flex items-start gap-3">
-                <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700">
-                  <CheckCircle2 className="size-5" aria-hidden="true" />
-                </div>
-                <div>
-                  <p className="font-semibold text-slate-950">
-                    {notification.title}
-                  </p>
-                  <p className="mt-1 leading-5 text-slate-500">
-                    {notification.message}
-                  </p>
+            {isNotificationOpen ? (
+              <div className="animate-popover-in absolute right-0 top-12 z-50 w-80 max-w-[calc(100vw-2rem)] rounded-lg border border-slate-200 bg-white p-4 text-sm shadow-xl shadow-slate-900/10">
+                <div className="flex items-start gap-3">
+                  <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700">
+                    <CheckCircle2 className="size-5" aria-hidden="true" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-slate-950">
+                      {notification.title}
+                    </p>
+                    <p className="mt-1 leading-5 text-slate-500">
+                      {notification.message}
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
-          ) : null}
-        </div>
+            ) : null}
+          </div>
 
-        <div className="relative hidden sm:block">
-          <button
-            type="button"
-            onClick={() => {
-              setProfileOpen((current) => !current);
-              setNotificationOpen(false);
-            }}
-            className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white py-1.5 pl-1.5 pr-3 text-left shadow-sm transition hover:border-[#0A3A60]/30 hover:bg-slate-50"
-            aria-label="Buka menu pengguna"
-            aria-expanded={isProfileOpen}
-            title="Profil pengguna"
+          <LoadingLink
+            href="/search"
+            className={[
+              "inline-flex size-10 items-center justify-center rounded-lg border shadow-sm transition",
+              pathname === "/search" || pathname.startsWith("/search/")
+                ? "border-[#0A3A60] bg-[#0A3A60] text-white shadow-sm shadow-slate-900/10"
+                : "border-slate-200 text-slate-600 hover:border-[#0A3A60]/30 hover:bg-slate-50 hover:text-[#0A3A60]",
+            ].join(" ")}
+            aria-label="Buka pencarian"
+            title="Pencarian"
           >
-            <Image
-              src="/ha-junn-profile-close.png"
-              alt="Foto profil HARJUN"
-              width={32}
-              height={32}
-              className="size-8 rounded-md object-cover object-[50%_24%]"
-            />
-            <span className="min-w-0">
-              <span className="block truncate text-sm font-semibold leading-4 text-slate-950">
-                {branchProfile.operator}
+            <Search className="size-5" aria-hidden="true" />
+          </LoadingLink>
+
+          <div className="relative hidden sm:block">
+            <button
+              type="button"
+              onClick={() => {
+                setProfileOpen((current) => !current);
+                setNotificationOpen(false);
+              }}
+              className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white py-1.5 pl-1.5 pr-3 text-left shadow-sm transition hover:border-[#0A3A60]/30 hover:bg-slate-50"
+              aria-label="Buka menu pengguna"
+              aria-expanded={isProfileOpen}
+              title="Profil pengguna"
+            >
+              <Image
+                src="/ha-junn-profile-close.png"
+                alt="Foto profil HARJUN"
+                width={32}
+                height={32}
+                className="size-8 rounded-md object-cover object-[50%_24%]"
+              />
+              <span className="min-w-0">
+                <span className="block truncate text-sm font-semibold leading-4 text-slate-950">
+                  {branchProfile.operator}
+                </span>
+                <span className="block truncate text-xs text-slate-500">
+                  {branchProfile.role}
+                </span>
               </span>
-              <span className="block truncate text-xs text-slate-500">
-                {branchProfile.role}
-              </span>
-            </span>
-            <ChevronDown
-              className={[
-                "size-4 text-slate-400 transition",
-                isProfileOpen ? "rotate-180" : "",
-              ].join(" ")}
-              aria-hidden="true"
-            />
-          </button>
+              <ChevronDown
+                className={[
+                  "size-4 text-slate-400 transition",
+                  isProfileOpen ? "rotate-180" : "",
+                ].join(" ")}
+                aria-hidden="true"
+              />
+            </button>
 
           {isProfileOpen ? (
-            <div className="absolute right-0 top-12 z-50 w-80 rounded-lg border border-slate-200 bg-white p-4 text-sm shadow-xl">
+            <div className="animate-popover-in absolute right-0 top-12 z-50 w-80 max-w-[calc(100vw-2rem)] rounded-lg border border-slate-200 bg-white p-4 text-sm shadow-xl shadow-slate-900/10">
               <div className="flex items-center gap-3">
                 <Image
                   src="/ha-junn-profile-close.png"
@@ -444,11 +562,12 @@ function TopNavbar({ onMenuClick }: { onMenuClick: () => void }) {
               </form>
             </div>
           ) : null}
-        </div>
+          </div>
 
-        <form action={signOutAction} className="sm:hidden">
-          <SignOutButton />
-        </form>
+          <form action={signOutAction} className="sm:hidden">
+            <SignOutButton />
+          </form>
+        </div>
       </div>
     </header>
   );
@@ -520,12 +639,8 @@ export function AppLayout({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-slate-950">
-      <aside className="fixed inset-y-0 left-0 z-40 hidden w-72 lg:block">
-        <SidebarContent counts={sidebarCounts} />
-      </aside>
-
       {isMobileNavOpen ? (
-        <div className="fixed inset-0 z-50 lg:hidden">
+        <div className="fixed inset-0 z-50 xl:hidden">
           <button
             type="button"
             className="absolute inset-0 bg-slate-950/45"
@@ -552,10 +667,13 @@ export function AppLayout({ children }: { children: ReactNode }) {
         </div>
       ) : null}
 
-      <div className="lg:pl-72">
-        <TopNavbar onMenuClick={() => setMobileNavOpen(true)} />
-        <main className="px-4 py-6 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-7xl">{children}</div>
+      <div>
+        <TopNavbar
+          counts={sidebarCounts}
+          onMenuClick={() => setMobileNavOpen(true)}
+        />
+        <main className="px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
+          <div className="mx-auto max-w-[1800px]">{children}</div>
         </main>
       </div>
     </div>
