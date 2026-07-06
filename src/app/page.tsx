@@ -2,7 +2,6 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { LucideIcon } from "lucide-react";
 import { redirect } from "next/navigation";
 import {
-  Activity,
   ArrowUpRight,
   BarChart3,
   Building2,
@@ -77,17 +76,6 @@ type DocumentRow = {
   category: string;
   pic: string;
   creator: string;
-};
-
-type ActivityRow = {
-  event_id: string;
-  document_id: string | null;
-  agenda_number: string | null;
-  document_type: DbDocumentType | null;
-  actor_name: string | null;
-  event_type: string;
-  message: string | null;
-  created_at: string;
 };
 
 type DashboardSummary = {
@@ -447,7 +435,7 @@ function buildTypeStats(rows: AnalyticsDocument[]): TypeStat[] {
 
 async function getDashboardData(supabase: SupabaseClient) {
   const monthWindow = getDashboardMonthWindow();
-  const [summaryResult, trendResult, documentsResult, analyticsResult, activityResult] =
+  const [summaryResult, trendResult, documentsResult, analyticsResult] =
     await Promise.all([
       supabase.rpc("get_dashboard_summary"),
       supabase.rpc("get_weekly_document_trend"),
@@ -483,7 +471,6 @@ async function getDashboardData(supabase: SupabaseClient) {
         .gte("received_at", monthWindow.startIso)
         .lt("received_at", monthWindow.endIso)
         .order("received_at", { ascending: true }),
-      supabase.rpc("get_recent_document_activity", { limit_count: 8 }),
     ]);
 
   if (summaryResult.error) {
@@ -502,10 +489,6 @@ async function getDashboardData(supabase: SupabaseClient) {
     console.error("Failed to load dashboard analytics", analyticsResult.error);
   }
 
-  if (activityResult.error) {
-    console.error("Failed to load recent activity", activityResult.error);
-  }
-
   const analyticsDocuments = (analyticsResult.data ?? []) as unknown as AnalyticsDocument[];
 
   return {
@@ -515,7 +498,6 @@ async function getDashboardData(supabase: SupabaseClient) {
     monthlyTrend: buildMonthlyTrend(analyticsDocuments, monthWindow),
     departmentStats: buildDepartmentStats(analyticsDocuments),
     typeStats: buildTypeStats(analyticsDocuments),
-    activity: (activityResult.data ?? []) as ActivityRow[],
   };
 }
 
@@ -860,91 +842,6 @@ function DepartmentDistribution({
   );
 }
 
-function getActivityLabel(eventType: string) {
-  const labels: Record<string, string> = {
-    ARCHIVED: "Diarsipkan",
-    ATTACHMENT_UPLOADED: "Lampiran",
-    COMMENTED: "Komentar",
-    CREATED: "Dibuat",
-    DELETED: "Dihapus",
-    MASTER_DATA_CHANGED: "Master data",
-    STATUS_CHANGED: "Status",
-    UPDATED: "Diperbarui",
-  };
-
-  return labels[eventType] ?? eventType;
-}
-
-function RecentActivity({ activities }: { activities: ActivityRow[] }) {
-  return (
-    <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <div className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
-            <Activity className="size-3.5" aria-hidden="true" />
-            Aktivitas Terbaru
-          </div>
-          <p className="mt-3 text-sm font-semibold text-slate-950">
-            Timeline Operasional
-          </p>
-          <p className="mt-1 text-sm text-slate-500">
-            Aktivitas terbaru dari dokumen dan invoice.
-          </p>
-        </div>
-        <LoadingLink
-          href="/search"
-          pendingLabel="Membuka..."
-          className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-600 transition hover:border-[#0A3A60]/30 hover:bg-slate-50 hover:text-[#0A3A60]"
-        >
-          Lihat data
-          <ArrowUpRight className="size-4" aria-hidden="true" />
-        </LoadingLink>
-      </div>
-
-      {activities.length > 0 ? (
-        <div className="mt-6 space-y-4">
-          {activities.map((activity) => (
-            <div key={activity.event_id} className="flex gap-3">
-              <div className="mt-1 flex size-9 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-600">
-                <Activity className="size-4" aria-hidden="true" />
-              </div>
-              <div className="min-w-0 flex-1 border-b border-slate-100 pb-4 last:border-b-0 last:pb-0">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600">
-                    {getActivityLabel(activity.event_type)}
-                  </span>
-                  {activity.document_type ? (
-                    <DocumentTypeBadge type={formatDocumentType(activity.document_type)} />
-                  ) : null}
-                </div>
-                <p className="mt-2 text-sm font-semibold text-slate-950">
-                  {activity.agenda_number ?? "Aktivitas dokumen"}
-                </p>
-                <p className="mt-1 line-clamp-2 text-sm leading-6 text-slate-600">
-                  {activity.message ?? getActivityLabel(activity.event_type)}
-                </p>
-                <p className="mt-2 text-xs text-slate-500">
-                  {formatDateTime(activity.created_at)}
-                  {activity.actor_name ? ` · ${activity.actor_name}` : ""}
-                </p>
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div className="mt-6 rounded-lg border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center">
-          <p className="text-sm font-semibold text-slate-700">
-            Belum ada aktivitas
-          </p>
-          <p className="mt-1 text-sm text-slate-500">
-            Timeline akan terisi setelah dokumen diproses.
-          </p>
-        </div>
-      )}
-    </section>
-  );
-}
-
 function DocumentTypeBadge({ type }: { type: DocumentType }) {
   return (
     <span
@@ -1157,9 +1054,8 @@ export default async function DashboardPage() {
           <DocumentTypeStats stats={dashboardData.typeStats} />
         </section>
 
-        <section className="grid gap-6 xl:grid-cols-[minmax(320px,0.85fr)_minmax(0,1.15fr)]">
+        <section className="grid gap-6">
           <DepartmentDistribution stats={dashboardData.departmentStats} />
-          <RecentActivity activities={dashboardData.activity} />
         </section>
 
         <DocumentsTable documents={dashboardData.documents} />
