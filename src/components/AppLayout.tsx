@@ -103,10 +103,6 @@ const navigationItems: NavigationItem[] = [
   },
 ];
 
-const desktopNavigationItems = navigationItems.filter(
-  (item) => item.href !== "/search",
-);
-
 const branchProfile = {
   code: "HRM-GA",
   name: "Pusat",
@@ -152,63 +148,6 @@ function BrandMark({ compact = false }: { compact?: boolean }) {
         <p className="truncate text-xs font-medium text-slate-500">DocFlow</p>
       </div>
     </LoadingLink>
-  );
-}
-
-function DesktopNavigation({ counts }: { counts: SidebarCounts }) {
-  const pathname = usePathname();
-
-  return (
-    <nav
-      className="hidden min-w-0 flex-1 items-center justify-start gap-1 overflow-visible pr-2 xl:flex 2xl:gap-2"
-      aria-label="Navigasi utama"
-    >
-      {desktopNavigationItems.map((item) => {
-        const Icon = item.icon;
-        const badgeValue =
-          item.badgeKey && counts[item.badgeKey] !== null
-            ? String(counts[item.badgeKey])
-            : null;
-        const isActive =
-          item.href === "/"
-            ? pathname === "/"
-            : pathname === item.href || pathname.startsWith(`${item.href}/`);
-
-        return (
-          <LoadingLink
-            key={item.label}
-            href={item.href}
-            className={[
-              "group inline-flex h-10 shrink-0 items-center gap-1.5 rounded-lg px-2.5 text-sm font-semibold transition 2xl:gap-2 2xl:px-4 2xl:text-[15px]",
-              isActive
-                ? "bg-[#0A3A60] text-white shadow-sm shadow-slate-900/10"
-                : "text-slate-600 hover:bg-slate-100 hover:text-[#0A3A60]",
-            ].join(" ")}
-          >
-            <Icon
-              className={[
-                "hidden size-4 shrink-0 2xl:block",
-                isActive ? "text-white" : "text-slate-400 group-hover:text-[#0A3A60]",
-              ].join(" ")}
-              aria-hidden="true"
-            />
-            <span className="whitespace-nowrap">{item.desktopLabel ?? item.label}</span>
-            {badgeValue ? (
-              <span
-                className={[
-                  "rounded-full px-2 py-0.5 text-xs font-bold leading-none",
-                  isActive
-                    ? "bg-white/15 text-white"
-                    : "bg-[#0A3A60]/10 text-[#0A3A60]",
-                ].join(" ")}
-              >
-                {badgeValue}
-              </span>
-            ) : null}
-          </LoadingLink>
-        );
-      })}
-    </nav>
   );
 }
 
@@ -338,13 +277,7 @@ function ProfileSignOutButton() {
   );
 }
 
-function TopNavbar({
-  counts,
-  onMenuClick,
-}: {
-  counts: SidebarCounts;
-  onMenuClick: () => void;
-}) {
+function TopNavbar({ onMenuClick }: { onMenuClick: () => void }) {
   const pathname = usePathname();
   const [isNotificationOpen, setNotificationOpen] = useState(false);
   const [isProfileOpen, setProfileOpen] = useState(false);
@@ -419,7 +352,7 @@ function TopNavbar({
   return (
     <header className="sticky top-0 z-30 border-b border-slate-200/80 bg-gradient-to-r from-[#F3F8FC]/95 via-[#F8FBFE]/95 to-[#EEF6FB]/95 shadow-sm backdrop-blur">
       <div className="bg-[#071B3A] text-white">
-        <div className="mx-auto flex h-9 max-w-[1800px] items-center gap-4 px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto flex h-9 max-w-[1600px] items-center gap-4 px-4 sm:px-6 lg:px-8">
           <div className="hidden shrink-0 items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-sky-100 lg:flex">
             <span>{currentDate}</span>
             <span className="h-1 w-1 rounded-full bg-sky-300" />
@@ -437,7 +370,7 @@ function TopNavbar({
         </div>
       </div>
 
-      <div className="mx-auto flex min-h-[72px] max-w-[1800px] items-center gap-3 px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto flex min-h-[72px] max-w-[1600px] items-center gap-3 px-4 sm:px-6 lg:px-8">
         <button
           type="button"
           onClick={onMenuClick}
@@ -448,11 +381,20 @@ function TopNavbar({
           <Menu className="size-5" aria-hidden="true" />
         </button>
 
-        <div className="w-[205px] shrink-0">
+        <div className="w-[205px] shrink-0 xl:hidden">
           <BrandMark compact />
         </div>
 
-        <DesktopNavigation counts={counts} />
+        <div className="hidden min-w-0 flex-1 items-center gap-3 xl:flex">
+          <div className="rounded-lg border border-slate-200 bg-white px-4 py-2 shadow-sm">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+              Area kerja
+            </p>
+            <p className="mt-0.5 text-sm font-semibold text-slate-950">
+              {branchProfile.name} {branchProfile.code}
+            </p>
+          </div>
+        </div>
 
         <div className="ml-auto flex shrink-0 items-center gap-2">
           <div className="relative">
@@ -542,38 +484,39 @@ function TopNavbar({
               />
             </button>
 
-          {isProfileOpen ? (
-            <div className="animate-popover-in absolute right-0 top-12 z-50 w-80 max-w-[calc(100vw-2rem)] rounded-lg border border-slate-200 bg-white p-4 text-sm shadow-xl shadow-slate-900/10">
-              <div className="flex items-center gap-3">
-                <Image
-                  src="/ha-junn-profile-close.png"
-                  alt="Foto profil HARJUN"
-                  width={44}
-                  height={44}
-                  className="size-11 rounded-lg object-cover object-[50%_24%]"
-                />
-                <div className="min-w-0">
-                  <p className="truncate font-semibold text-slate-950">
-                    {branchProfile.operator}
+            {isProfileOpen ? (
+              <div className="animate-popover-in absolute right-0 top-12 z-50 w-80 max-w-[calc(100vw-2rem)] rounded-lg border border-slate-200 bg-white p-4 text-sm shadow-xl shadow-slate-900/10">
+                <div className="flex items-center gap-3">
+                  <Image
+                    src="/ha-junn-profile-close.png"
+                    alt="Foto profil HARJUN"
+                    width={44}
+                    height={44}
+                    className="size-11 rounded-lg object-cover object-[50%_24%]"
+                  />
+                  <div className="min-w-0">
+                    <p className="truncate font-semibold text-slate-950">
+                      {branchProfile.operator}
+                    </p>
+                    <p className="text-xs text-slate-500">
+                      {branchProfile.role} {branchProfile.code}
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-4 rounded-lg border border-[#0A3A60]/10 bg-[#0A3A60]/5 p-3">
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#0A3A60]">
+                    Akses aktif
                   </p>
-                  <p className="text-xs text-slate-500">
-                    {branchProfile.role} {branchProfile.code}
+                  <p className="mt-1 text-xs leading-5 text-slate-600">
+                    Input dokumen, invoice, surat keluar, dan tanda terima
+                    digital.
                   </p>
                 </div>
+                <form action={signOutAction} className="mt-4">
+                  <ProfileSignOutButton />
+                </form>
               </div>
-              <div className="mt-4 rounded-lg border border-[#0A3A60]/10 bg-[#0A3A60]/5 p-3">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#0A3A60]">
-                  Akses aktif
-                </p>
-                <p className="mt-1 text-xs leading-5 text-slate-600">
-                  Input dokumen, invoice, surat keluar, dan tanda terima digital.
-                </p>
-              </div>
-              <form action={signOutAction} className="mt-4">
-                <ProfileSignOutButton />
-              </form>
-            </div>
-          ) : null}
+            ) : null}
           </div>
 
           <form action={signOutAction} className="sm:hidden">
@@ -679,14 +622,17 @@ export function AppLayout({ children }: { children: ReactNode }) {
         </div>
       ) : null}
 
-      <div>
-        <TopNavbar
-          counts={sidebarCounts}
-          onMenuClick={() => setMobileNavOpen(true)}
-        />
-        <main className="px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
-          <div className="mx-auto max-w-[1800px]">{children}</div>
-        </main>
+      <div className="xl:flex xl:min-h-screen">
+        <aside className="hidden xl:sticky xl:top-0 xl:flex xl:h-screen xl:w-72 xl:shrink-0 xl:overflow-y-auto">
+          <SidebarContent counts={sidebarCounts} />
+        </aside>
+
+        <div className="min-w-0 flex-1">
+          <TopNavbar onMenuClick={() => setMobileNavOpen(true)} />
+          <main className="px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
+            <div className="mx-auto max-w-[1600px]">{children}</div>
+          </main>
+        </div>
       </div>
     </div>
   );
