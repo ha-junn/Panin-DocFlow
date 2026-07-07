@@ -352,7 +352,7 @@ function TopNavbar({ onMenuClick }: { onMenuClick: () => void }) {
   return (
     <header className="sticky top-0 z-30 border-b border-slate-200/80 bg-gradient-to-r from-[#F3F8FC]/95 via-[#F8FBFE]/95 to-[#EEF6FB]/95 shadow-sm backdrop-blur">
       <div className="bg-[#071B3A] text-white">
-        <div className="mx-auto flex h-9 max-w-[1600px] items-center gap-4 px-4 sm:px-6 lg:px-8">
+        <div className="flex h-9 w-full items-center gap-4 px-4 sm:px-6 lg:px-6 2xl:px-8">
           <div className="hidden shrink-0 items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-sky-100 lg:flex">
             <span>{currentDate}</span>
             <span className="h-1 w-1 rounded-full bg-sky-300" />
@@ -370,7 +370,7 @@ function TopNavbar({ onMenuClick }: { onMenuClick: () => void }) {
         </div>
       </div>
 
-      <div className="mx-auto flex min-h-[72px] max-w-[1600px] items-center gap-3 px-4 sm:px-6 lg:px-8">
+      <div className="flex min-h-[72px] w-full items-center gap-3 px-4 sm:px-6 lg:px-6 2xl:px-8">
         <button
           type="button"
           onClick={onMenuClick}
@@ -593,7 +593,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] text-slate-950">
+    <div className="min-h-screen overflow-x-clip bg-[#F8FAFC] text-slate-950">
       {isMobileNavOpen ? (
         <div className="fixed inset-0 z-50 xl:hidden">
           <button
@@ -622,15 +622,15 @@ export function AppLayout({ children }: { children: ReactNode }) {
         </div>
       ) : null}
 
-      <div className="xl:flex xl:min-h-screen">
-        <aside className="hidden xl:sticky xl:top-0 xl:flex xl:h-screen xl:w-72 xl:shrink-0 xl:overflow-y-auto">
+      <div className="xl:grid xl:min-h-screen xl:grid-cols-[18rem_minmax(0,1fr)]">
+        <aside className="hidden xl:sticky xl:top-0 xl:flex xl:h-screen xl:w-full xl:overflow-y-auto">
           <SidebarContent counts={sidebarCounts} />
         </aside>
 
-        <div className="min-w-0 flex-1">
+        <div className="min-w-0 overflow-x-clip">
           <TopNavbar onMenuClick={() => setMobileNavOpen(true)} />
-          <main className="px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
-            <div className="mx-auto max-w-[1600px]">{children}</div>
+          <main className="px-4 py-5 sm:px-6 sm:py-6 lg:px-6 lg:py-8 2xl:px-8">
+            <div className="min-w-0">{children}</div>
           </main>
         </div>
       </div>
