@@ -388,17 +388,6 @@ function TopNavbar({ onMenuClick }: { onMenuClick: () => void }) {
           <BrandMark compact />
         </div>
 
-        <div className="hidden min-w-0 flex-1 items-center gap-3 xl:flex">
-          <div className="rounded-lg border border-slate-200 bg-white px-4 py-2 shadow-sm">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
-              Area kerja
-            </p>
-            <p className="mt-0.5 text-sm font-semibold text-slate-950">
-              {branchProfile.name} {branchProfile.code}
-            </p>
-          </div>
-        </div>
-
         <div className="ml-auto flex shrink-0 items-center gap-2">
           <div className="relative">
             <button
