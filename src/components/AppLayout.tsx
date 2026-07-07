@@ -627,14 +627,14 @@ export function AppLayout({ children }: { children: ReactNode }) {
 
       <aside
         data-app-sidebar
-        className="hidden xl:fixed xl:inset-y-0 xl:left-0 xl:z-40 xl:flex xl:w-72 xl:overflow-y-auto"
+        className="hidden xl:fixed xl:inset-y-0 xl:left-0 xl:z-40 xl:flex xl:w-96 xl:overflow-y-auto"
       >
         <SidebarContent counts={sidebarCounts} />
       </aside>
 
       <div
         data-app-content
-        className="min-h-screen min-w-0 xl:ml-72"
+        className="min-h-screen min-w-0 xl:ml-96"
       >
         <div className="min-w-0 overflow-x-clip">
           <TopNavbar onMenuClick={() => setMobileNavOpen(true)} />
