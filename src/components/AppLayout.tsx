@@ -352,7 +352,7 @@ function TopNavbar({ onMenuClick }: { onMenuClick: () => void }) {
   return (
     <header
       data-app-topbar
-      className="sticky top-0 z-30 w-full border-b border-slate-200/80 bg-gradient-to-r from-[#F3F8FC]/95 via-[#F8FBFE]/95 to-[#EEF6FB]/95 shadow-sm backdrop-blur"
+      className="fixed left-0 right-0 top-0 z-30 border-b border-slate-200/80 bg-gradient-to-r from-[#F3F8FC]/95 via-[#F8FBFE]/95 to-[#EEF6FB]/95 shadow-sm backdrop-blur xl:left-72"
     >
       <div className="bg-[#071B3A] text-white">
         <div className="flex h-9 w-full items-center gap-4 px-4 sm:px-6 lg:px-4 xl:pl-0 xl:pr-3 2xl:pl-0 2xl:pr-4">
@@ -640,7 +640,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
           <TopNavbar onMenuClick={() => setMobileNavOpen(true)} />
           <main
             data-app-main
-            className="px-4 py-5 sm:px-6 sm:py-6 lg:px-4 lg:py-6 xl:pl-1 xl:pr-3 2xl:pl-1 2xl:pr-4"
+            className="px-4 pb-5 pt-[128px] sm:px-6 sm:pb-6 sm:pt-[132px] lg:px-4 lg:pb-6 xl:pl-1 xl:pr-3 2xl:pl-1 2xl:pr-4"
           >
             <div className="min-w-0">{children}</div>
           </main>
