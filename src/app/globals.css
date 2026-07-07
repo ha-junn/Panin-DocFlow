@@ -28,11 +28,15 @@
 
 html {
   background: var(--background);
+  width: 100%;
+  max-width: 100%;
   overflow-x: hidden;
   scroll-behavior: smooth;
 }
 
 body {
+  width: 100%;
+  max-width: 100%;
   min-width: 320px;
   min-height: 100vh;
   margin: 0;

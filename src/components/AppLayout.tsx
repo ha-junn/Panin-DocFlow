@@ -350,7 +350,10 @@ function TopNavbar({ onMenuClick }: { onMenuClick: () => void }) {
   }, [pathname]);
 
   return (
-    <header className="sticky top-0 z-30 border-b border-slate-200/80 bg-gradient-to-r from-[#F3F8FC]/95 via-[#F8FBFE]/95 to-[#EEF6FB]/95 shadow-sm backdrop-blur">
+    <header
+      data-app-topbar
+      className="sticky top-0 z-30 w-full border-b border-slate-200/80 bg-gradient-to-r from-[#F3F8FC]/95 via-[#F8FBFE]/95 to-[#EEF6FB]/95 shadow-sm backdrop-blur"
+    >
       <div className="bg-[#071B3A] text-white">
         <div className="flex h-9 w-full items-center gap-4 px-4 sm:px-6 lg:px-4 xl:pl-0 xl:pr-3 2xl:pl-0 2xl:pr-4">
           <div className="hidden shrink-0 items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-sky-100 lg:flex">
@@ -622,14 +625,23 @@ export function AppLayout({ children }: { children: ReactNode }) {
         </div>
       ) : null}
 
-      <div className="xl:flex xl:min-h-screen xl:w-full">
-        <aside className="hidden xl:sticky xl:top-0 xl:flex xl:h-screen xl:w-72 xl:shrink-0 xl:overflow-y-auto">
-          <SidebarContent counts={sidebarCounts} />
-        </aside>
+      <aside
+        data-app-sidebar
+        className="hidden xl:fixed xl:inset-y-0 xl:left-0 xl:z-40 xl:flex xl:w-72 xl:overflow-y-auto"
+      >
+        <SidebarContent counts={sidebarCounts} />
+      </aside>
 
-        <div className="min-w-0 flex-1 overflow-x-clip">
+      <div
+        data-app-content
+        className="min-h-screen min-w-0 xl:ml-72"
+      >
+        <div className="min-w-0 overflow-x-clip">
           <TopNavbar onMenuClick={() => setMobileNavOpen(true)} />
-          <main className="px-4 py-5 sm:px-6 sm:py-6 lg:px-4 lg:py-6 xl:pl-1 xl:pr-3 2xl:pl-1 2xl:pr-4">
+          <main
+            data-app-main
+            className="px-4 py-5 sm:px-6 sm:py-6 lg:px-4 lg:py-6 xl:pl-1 xl:pr-3 2xl:pl-1 2xl:pr-4"
+          >
             <div className="min-w-0">{children}</div>
           </main>
         </div>
